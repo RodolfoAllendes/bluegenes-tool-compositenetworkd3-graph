@@ -1,0 +1,13 @@
+{
+  "accepts": ["ids"],
+  "classes": ["Gene"],
+  "files" : {
+    "css" : "dist/style.css",
+    "js" : "dist/bundle.js"
+  },
+  "toolName" : {
+    "human" :"Composite Network D3 Graph",
+    "cljs" :"bluegenesToolCompositeNetworkd3Graph"    
+  },
+  "version": 2
+}

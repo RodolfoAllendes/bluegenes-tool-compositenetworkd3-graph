@@ -1,0 +1,64 @@
+{
+  "name": "@intermine/bluegenes-tool-compositenetworkd3-graph",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "description": "",
+  "homepage": "http://www.intermine.org",
+  "files": [
+    "/dist",
+    "/config.json",
+    "/preview.png"
+  ],
+  "scripts": {
+    "test": "jest",
+    "build": "./node_modules/.bin/webpack",
+    "dev": "node dev/serve.js",
+    "webpack:dev:build": "./node_modules/.bin/webpack --mode=development",
+    "webpack:watch": "./node_modules/.bin/webpack --watch",
+    "less": "lessc src/style.less dist/style.css --clean-css",
+    "less:dev": "./node_modules/less-watch-compiler/dist/less-watch-compiler.js src dist",
+    "lint": "./node_modules/.bin/eslint src/*.js -c .eslintrc --ext js",
+    "lint:fix": "./node_modules/.bin/eslint src/*.js -c .eslintrc --ext js --fix",
+    "prepack": "npm run build && npm run less"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "./node_modules/.bin/eslint -c .eslintrc",
+      "git add"
+    ]
+  },
+  "keywords": [
+    "bluegenes-intermine-tool"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^24.0.13",
+    "chokidar": "^3.0.0",
+    "eslint": "^5.16.0",
+    "eslint-config-prettier": "^4.2.0",
+    "eslint-plugin-import": "^2.17.2",
+    "eslint-plugin-prettier": "^3.1.0",
+    "express": "^4.16.3",
+    "husky": "^2.2.0",
+    "imjs": "^3.16",
+    "jest": "^24.8.0",
+    "less": "^3.8.1",
+    "less-plugin-clean-css": "^1.5.1",
+    "less-watch-compiler": "^1.13.0",
+    "lint-staged": "^8.1.6",
+    "prettier": "^1.17.0",
+    "socket.io": "^2.2.0",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0",
+    "style-loader": "^1.1.3",
+    "css-loader": "^3.4.2"
+  }
+}

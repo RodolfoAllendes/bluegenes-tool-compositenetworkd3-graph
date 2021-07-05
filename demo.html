@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>
+    Composite Network D3 Graph
+  </title>
+
+  <!-- You can assume imjs is on the window.  -->
+  <script src="node_modules/imjs/dist/im.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+
+  
+
+  <!-- These are the styles YOU implement in src/style.less -->
+  <link rel="stylesheet" href="dist/style.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+	<script>
+		var socket = io("http://localhost:3457");
+    socket.on('reload', function(){
+			document.location.reload();
+    });
+	</script>
+</head>
+
+<body>
+  <div class="bluegenesToolCompositeNetworkd3Graph" id='yourDiv' />
+  <script>
+    window.onload = function() {
+    	// InterMine service, including URL and optionally token.
+      var imService = { root: 'https://www.humanmine.org/humanmine' };
+	    // The element to attach the viewer to. Must be an existing DOM element.
+    	var elem = document.getElementById('yourDiv'),
+        // We use imjs to acquire the example data for initializing the tool,
+        // as hardcoding object IDs would require them to be updated on every
+        // database rebuild in the respective Intermine.
+        getDataForTool = function() {
+          var service = new imjs.Service(imService);
+          // You can change this to a different object type and identifier.
+          return service.lookup('Gene', 'GATA1');
+        },
+    		toolState = {}, // To be confirmed how we use this.
+        navigate = function(type, data, mine) {
+          // Helpful console message when calling navigate function.
+          var someMine = mine ? "on ".concat(mine) : null;
+          var msg = ["Navigating to", type, someMine, "with data:"]
+            .filter(function(e) { return e }) // remove falsy elements
+            .join(" ");
+          console.log(msg, data);
+        };
+    	// The method signature should match the signature in src/index.js
+    	$.ajax('config.json').then(function(config) {
+        getDataForTool().then(function(response) {
+          if (!response.length) throw new Error('Failed to initialize tool. No results when fetching data for initializing tool with. Please check demo.html:getDataForTool')
+
+          var obj = response[0];
+          // This represents an example of what would be passed to this tool.
+          var dataForTool = {
+            [obj.class]: {
+              class: obj.class,
+              format: 'id',
+              value: obj.objectId
+            }
+          };
+
+          bluegenesToolCompositeNetworkd3Graph.main(
+            elem,
+            imService,
+            dataForTool,
+            toolState,
+            config,
+            navigate
+          );
+        });
+    	});
+    };
+  </script>
+  <script src="dist/bundle.js"></script>
+
+</body>
+
+</html>
