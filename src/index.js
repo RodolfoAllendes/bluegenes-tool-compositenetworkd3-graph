@@ -45,7 +45,11 @@ function main(el, service, imEntity, state, config) {
 	el.innerHTML = `
 		<div class="rootContainer">
 			<div id="compositeNetworkD3-graph" class="targetmineGraphDisplayer">
-				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG"></svg>
+				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG">
+					<g id="background"></g>
+					<g id="edges"></g>
+					<g id="nodes"></g>
+				</svg>
 			
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
 					<div id="interactions-div" class="flex-table">	
@@ -59,8 +63,10 @@ function main(el, service, imEntity, state, config) {
 						</div>
 						<div>MTIs
 						</div>
-					</div>	
-					<div>Info</div>
+					</div>	q
+					<div id="information-div" class="flex-table">
+						<label>Info:</label>
+					</div>
 				</div>
 				<div id="modal_compositeNetwork" class="targetmineGraphModal">
 				</div>

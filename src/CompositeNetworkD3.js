@@ -1,6 +1,8 @@
 'use strict';
 import { MultiLayerNetwork } from './MultiLayerNetwork';
 
+const d3 = require('d3');
+
 export class CompositeNetworkD3{
 	
 	/**
@@ -42,21 +44,30 @@ export class CompositeNetworkD3{
 			[ ['gene2', 'primaryIdentifier'], ['gene2', 'symbol'] ]
 		);
 
-	// 	this.props.data.forEach((g) => {
-	// 		nodes.set(g.objectId, { 
-	// 			primaryIdentifier: g.primaryIdentifier,
-	// 			symbol: g.symbol,
-	// 			organism: g.organism.name
-	// 		});
-	// 		vm.add(g.objectId);
-	// 	});
-	// 	// initialize the state of the network
-	// 	this.state = {
-	// 		
-	// 		nodes,
-	// 		vm: new Map([['Gene', vm]]),
-	// 		edges: new Map()
-	// 	};
+		this.width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
+		this.height = parseInt(d3.select('#canvas_compositeNetwork').style('height'));
+
+		this.plot();
+	}
+
+
+	plot(){
+		let [w,h] = this.network.setNodesPositions(this.width, this.height);
+		if(this.width !== w || this.height !== h){
+			this.width = w;
+			this.height = h;
+		}
+
+		this.network.plotBackground('#background', this.width);
+
+		this.network.plotNodes();
+		
+		/* finally change the viewbox of the svg */
+		d3.select('svg')
+			.attr('viewBox', '0 0'+
+				' '+ this.width + 
+				' '+ this.height )
+		;
 	}
 
 
