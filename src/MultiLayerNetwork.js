@@ -1,4 +1,5 @@
 'use strict';
+
 const d3 = require('d3');
 
 export class MultiLayerNetwork{
@@ -27,32 +28,32 @@ export class MultiLayerNetwork{
 	}
 
 	/**
-	 * 
+	 * @param {string} source
 	 * @param {Array} data 
 	 * @param {string} layer 
-	 * @param {string} id 
-	 * @param {Array} attributes 
+	 * @param {string} id_attr 
+	 * @param {Array} attr 
 	 */
-	parseNodes(data, layer, id, attributes){
+	parseNodesAndEdges(source, data, layer, id_attr, attr){
 		// retrieve current vm for the layer
 		let vm = this.vm.get(layer) || new Set();
-		data.forEach(ele => {
+		
+		data.forEach(ele => {	
 			// add nodes to list of nodes
-			this.nodes.set(ele[id], attributes.reduce((acc,cur) => {
-				if(typeof cur === 'string')
-					return { ...acc, [cur]: ele[cur] };
-				else
-					return { ...acc, [cur[1]]: ele[cur[0]][cur[1]] };
-			}, {}));
+			let id = typeof attr[0] === 'string' ? ele[attr[0]] : ele[attr[0][0]][attr[0][1]];
+			let symbol = typeof attr[1] === 'string' ? ele[attr[1]] : ele[attr[1][0]][attr[1][1]];
+			this.nodes.set(ele[id_attr], { id, symbol });
+			
+			// add edges only if a source was identified 
+			if(source !== undefined){
+				this.edges.set(source+'-'+ele[id_attr], {source, target: ele[id_attr]});
+			}
 			
 			// add reference between layer and node
-			vm.add(ele[id]);
+			vm.add(ele[id_attr]);
 		}, this);
 		this.vm.set(layer, vm); 
 	}
-
-	parseEdges(){}
-
 
 	/**
 	 * Update the position of the nodes
@@ -83,7 +84,6 @@ export class MultiLayerNetwork{
 			n = layer.size;
 			let x0 = this.nodeBB / 2;
 		
-			// console.log('layer,id', layer,id);
 			// the column index for the current node
 			let x = 0;
 			y += 1;
@@ -123,15 +123,41 @@ export class MultiLayerNetwork{
 		;
 	}
 
+	plotEdges(){
+		const edges = [...this.edges.values()].map(edge => {
+			let s = this.nodes.get(edge.source);
+			let t = this.nodes.get(edge.target);
+			return { source: [s.x, s.y+this.r], target: [t.x, t.y-this.r-2]  };
+		});
+		
+
+		d3.select('#edges').selectAll('path')
+			.data(edges)
+			.enter().append('path')
+				.attr('class', 'arrow')
+				.attr('marker-end', 'url(#arrow)')
+				// .attr('x1',d => d.sx)
+				// .attr('x2',d => d.tx)
+				// .attr('y1',d => d.sy)
+				// .attr('y2',d => d.ty)
+				.attr('d', d3.linkVertical()
+					.source(d => d.source)
+					.target(d => d.target)
+				)
+				.attr('stroke', 'black')
+				.style('opacity', 0.2)
+			.exit().remove();
+	}
+
 	plotNodes(){
+		let self = this;
 		d3.select('#nodes').selectAll().remove();
 		this.vm.forEach((eles,layer) => {
 			// fetch node's coordinates
 			const nodes = [...eles].map(node => {
 				let n = this.nodes.get(node);
-				return {x: n.x, y:n.y};
+				return {x: n.x, y:n.y, id: node};
 			});
-			// console.log(nodes);
 			// and layer's color 
 			let color = this.layers.get(layer).color;
 			d3.select('#nodes').append('g')
@@ -147,6 +173,11 @@ export class MultiLayerNetwork{
 					.attr('stroke', 'black')
 					.attr('cx', d => d.x)
 					.attr('cy', d => d.y)
+					.attr('id', d => d.id)
+					.on('click', function(){
+						let node = self.nodes.get(parseInt(this.id));
+						window.alert(node.id, node.symbol);
+					})
 					
 				.exit().remove()
 			;

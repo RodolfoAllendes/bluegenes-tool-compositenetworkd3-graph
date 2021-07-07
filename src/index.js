@@ -15,12 +15,10 @@ function main(el, service, imEntity, state, config) {
 		query.select([
 			'primaryIdentifier',
 			'symbol',
-			'organism.name',
-
+			
 			'proteins.compounds.compound.identifier',
 			'proteins.compounds.compound.name',
-			'proteins.compounds.compound.inchiKey',
-			'proteins.compounds.compound.originalId',
+			// 'proteins.compounds.compound.originalId',
 
 			'miRNAInteractions.miRNA.primaryIdentifier',
 			'miRNAInteractions.miRNA.symbol',
@@ -45,7 +43,7 @@ function main(el, service, imEntity, state, config) {
 	el.innerHTML = `
 		<div class="rootContainer">
 			<div id="compositeNetworkD3-graph" class="targetmineGraphDisplayer">
-				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG">
+				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG" preserveAspectRatio="xMinYMin meet">
 					<g id="background"></g>
 					<g id="edges"></g>
 					<g id="nodes"></g>
@@ -58,12 +56,19 @@ function main(el, service, imEntity, state, config) {
 							<input id="cb-tf" type="checkbox"></input>
 							<label class="row-label">TF targets<label>
 						</div>
-						<div>PCIs</div>
-						<div>PPIs (HCDP)
+						<div id="interactions-pci" class="flex-row">
+							<input id="cb-pci" type="checkbox"></input>
+							<label class="row-label">PCIs</label>
 						</div>
-						<div>MTIs
+						<div id="interactions-ppi" class="flex-row">
+							<input id="cb-ppi" type="checkbox"></input>
+							<label class="row-label">PPIs (HCDP)</label>
 						</div>
-					</div>	q
+						<div id="interactions-mti" class="flex-row">
+							<input id="cb-mti" type="checkbox"></input>
+							<label class="row-label">MTIs</label>
+						</div>
+					</div>
 					<div id="information-div" class="flex-table">
 						<label>Info:</label>
 					</div>
