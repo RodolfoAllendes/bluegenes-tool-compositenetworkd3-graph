@@ -1,7 +1,5 @@
 'use strict';
 
-const d3 = require('d3');
-
 export class MultiLayerNetwork{
 	constructor(){
 		// structural properties for the network
@@ -10,10 +8,8 @@ export class MultiLayerNetwork{
 		this.vm = new Map();
 		this.edges = new Map();
 
-		// graphical properties of the nodes
-		this.r = 15;
-		this.nodeMargin = 10;
-		this.nodeBB = 50;
+		this.summaryNodes = new Map();
+		this.displayLayers = new Set();
 	}
 
 	/**
@@ -24,7 +20,8 @@ export class MultiLayerNetwork{
 	 * @param {boolean} visible 
 	 */
 	addLayer(name, color, shape, visible){
-		this.layers.set(name, {color, shape, display: visible});
+		this.layers.set(name, {color, shape});
+		if(visible) this.displayLayers.add(name);
 	}
 
 	/**
@@ -55,21 +52,29 @@ export class MultiLayerNetwork{
 		this.vm.set(layer, vm); 
 	}
 
+	groupNodes(){
+
+	}
+
 	/**
 	 * Update the position of the nodes
 	 * We will implement a simple grid layout of the nodes, stacking from top to 
 	 * bottom the different layers of the network
 	 * @param {int} width the width of the drawing panel in pixels
 	 * @param {int} height the height of the drawin panel in pixels
+	 * @param {int} bb the bounding box size of a node
 	 * @returns the pair [width, height] for the viewbox of the svg container
 	 */
-	setNodesPositions(width, height){
-		let n = this.nodes.size;
+	setNodesPositions(width, height, bb){
+		// calculate the number of nodes that need to be displayed
+		let n = 0;
+		this.displayLayers.forEach(dl => n += this.vm.get(dl).size);
+		
 		// how many nodes fit the screen horizontally given the pre-defined node 
 		// bounding box
 		let ar = width/height;
-		let cols = Math.floor(width/this.nodeBB);
-		let rows = Math.floor(height/this.nodeBB);
+		let cols = Math.floor(width/bb);
+		let rows = Math.floor(height/bb);
 		while(rows * cols < n){
 			cols/rows < ar ? cols+=1 : rows+=1;
 		}
@@ -78,111 +83,36 @@ export class MultiLayerNetwork{
 		// will be handled based on this index)
 		let y = -1;
 		// actually position the nodes on each layer
-		this.vm.forEach((layer, id) => {
-			// shifting in position along the x axis
-			// the number of nodes in the current layer
-			n = layer.size;
-			let x0 = this.nodeBB / 2;
-		
-			// the column index for the current node
-			let x = 0;
+		this.displayLayers.forEach(dl => {
+			// retrieve the list of nodes for the current layer
+			let layer = this.vm.get(dl);
+			// we set the starting row and column for node positioning
+			let x0 = bb/2;
+			let x = Math.floor(cols/2);
 			y += 1;
-			let layerDims = { ymin: y*this.nodeBB} ;
-			// console.log('layer',id,'starts at',y);
+			let j = 1;
+			
+			// and position the nodes one by one, moving away from the center column
+			// and down as the columns get filled
 			layer.forEach((node) => {
 				let n = this.nodes.get(node);
-				n['x'] = x0 + (this.nodeBB*(x%cols));
-				n['y'] = (this.nodeBB*(y+1))-(this.nodeBB/2);
-				x += 1;
-				if(x == cols){
-					x = 0;
+				n['x'] = x0 + (bb*(x%cols));
+				n['y'] = (bb*(y+1))-(bb/2);
+				x += ((-1)**j)*j;
+				j += 1;
+				if(x >= cols || x < 0){
+					x = Math.floor(cols/2);
 					y += 1;
+					j = 1;
 				}
 			});
 			// add 'layer bounding box' based on the nodes coordinates
-			layerDims['ymax'] = (y+1) * this.nodeBB;
-			this.layers.get(id)['dims'] = layerDims;
+			// layerDims['ymax'] = (y+1) * bb;
+			// this.layers.get(id)['dims'] = layerDims;
+			
 		});
 		// return the updated width/height svg viewBox
-		return [cols*this.nodeBB,(y+1)*this.nodeBB];
+		return [cols*bb,(y+1)*bb];
 	}
-
-
-	plotBackground(graph, width){
-		/* plot a series of layer backgrounds */
-		d3.select(graph).selectAll('rect')
-			.data([...this.layers.values()])
-			.enter().append('rect')
-				.attr('x', 0)
-				.attr('y', d => d.dims.ymin)
-				.attr('width', width)
-				.attr('height', d => d.dims.ymax - d.dims.ymin)
-				.attr('fill', d => d.color)
-				.style('opacity', 0.1)
-			.exit().remove()
-		;
-	}
-
-	plotEdges(){
-		const edges = [...this.edges.values()].map(edge => {
-			let s = this.nodes.get(edge.source);
-			let t = this.nodes.get(edge.target);
-			return { source: [s.x, s.y+this.r], target: [t.x, t.y-this.r-2]  };
-		});
-		
-
-		d3.select('#edges').selectAll('path')
-			.data(edges)
-			.enter().append('path')
-				.attr('class', 'arrow')
-				.attr('marker-end', 'url(#arrow)')
-				// .attr('x1',d => d.sx)
-				// .attr('x2',d => d.tx)
-				// .attr('y1',d => d.sy)
-				// .attr('y2',d => d.ty)
-				.attr('d', d3.linkVertical()
-					.source(d => d.source)
-					.target(d => d.target)
-				)
-				.attr('stroke', 'black')
-				.style('opacity', 0.2)
-			.exit().remove();
-	}
-
-	plotNodes(){
-		let self = this;
-		d3.select('#nodes').selectAll().remove();
-		this.vm.forEach((eles,layer) => {
-			// fetch node's coordinates
-			const nodes = [...eles].map(node => {
-				let n = this.nodes.get(node);
-				return {x: n.x, y:n.y, id: node};
-			});
-			// and layer's color 
-			let color = this.layers.get(layer).color;
-			d3.select('#nodes').append('g')
-				.attr('id', 'layer-'+layer);
-			
-			// group the nodes within a single layer
-			d3.select('#layer-'+layer).selectAll('g')
-				.data(nodes)
-				.enter().append('g')
-					.append('circle')
-					.attr('r',this.r)
-					.attr('fill', color)
-					.attr('stroke', 'black')
-					.attr('cx', d => d.x)
-					.attr('cy', d => d.y)
-					.attr('id', d => d.id)
-					.on('click', function(){
-						let node = self.nodes.get(parseInt(this.id));
-						window.alert(node.id, node.symbol);
-					})
-					
-				.exit().remove()
-			;
-		});
-	}
-
 
 }

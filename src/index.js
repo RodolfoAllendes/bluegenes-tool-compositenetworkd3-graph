@@ -52,20 +52,22 @@ function main(el, service, imEntity, state, config) {
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
 					<div id="interactions-div" class="flex-table">	
 						<label>Interaction Types:</label>
-						<div id="interactions-tf" class="flex-row">
-							<input id="cb-tf" type="checkbox"></input>
-							<label class="row-label">TF targets<label>
-						</div>
 						<div id="interactions-pci" class="flex-row">
-							<input id="cb-pci" type="checkbox"></input>
+							<input id="cb-pci" type="checkbox" data-layer="Compound"></input>
 							<label class="row-label">PCIs</label>
 						</div>
+						
+						<div id="interactions-tf" class="flex-row">
+							<input id="cb-tf" type="checkbox" data-layer="Transcription"></input>
+							<label class="row-label">TF targets<label>
+						</div>
+						
 						<div id="interactions-ppi" class="flex-row">
-							<input id="cb-ppi" type="checkbox"></input>
+							<input id="cb-ppi" type="checkbox" data-layer="Interactions"></input>
 							<label class="row-label">PPIs (HCDP)</label>
 						</div>
 						<div id="interactions-mti" class="flex-row">
-							<input id="cb-mti" type="checkbox"></input>
+							<input id="cb-mti" type="checkbox" data-layer="miRNA"></input>
 							<label class="row-label">MTIs</label>
 						</div>
 					</div>
