@@ -2,7 +2,7 @@
 import { CompositeNetworkD3 } from './CompositeNetworkD3.js';
 
 // make sure to export main, with the signature
-function main(el, service, imEntity, state, config) {
+function main(el, service, imEntity, state, config, navigate) {
 	if (!state) state = {};
 	if (!el || !service || !imEntity || !state || !config) {
 		throw new Error('Call main with correct signature');
@@ -18,7 +18,6 @@ function main(el, service, imEntity, state, config) {
 			
 			'proteins.compounds.compound.identifier',
 			'proteins.compounds.compound.name',
-			// 'proteins.compounds.compound.originalId',
 
 			'miRNAInteractions.miRNA.primaryIdentifier',
 			'miRNAInteractions.miRNA.symbol',
@@ -37,13 +36,13 @@ function main(el, service, imEntity, state, config) {
 
 		return Promise.all([model, imService.records(query)]);
 	}).then(([model, rows]) => {
-		window.CompositeNetwork = new CompositeNetworkD3(model, rows);
+		window.CompositeNetwork = new CompositeNetworkD3(model, rows, navigate);
 	});
 
 	el.innerHTML = `
 		<div class="rootContainer">
 			<div id="compositeNetworkD3-graph" class="targetmineGraphDisplayer">
-				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG" preserveAspectRatio="xMinYMin meet">
+				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG">
 					<g id="background"></g>
 					<g id="edges"></g>
 					<g id="nodes"></g>
@@ -72,7 +71,16 @@ function main(el, service, imEntity, state, config) {
 						</div>
 					</div>
 					<div id="information-div" class="flex-table">
-						<label>Info:</label>
+						<label>Node Information:</label>
+						<div id="nodeLayer-div" class="flex-row">
+							<label class="row-label">Click on a node to see details...</label>
+						</div>
+						<div id="nodeSymbol-div" class="flex-row">
+							<label class="row-label"></label>
+						</div>
+						<div id="nodeId-div" class="flex-row">
+							<label class="row-label"></label>
+						</div>
 					</div>
 				</div>
 				<div id="modal_compositeNetwork" class="targetmineGraphModal">

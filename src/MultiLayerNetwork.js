@@ -8,7 +8,7 @@ export class MultiLayerNetwork{
 		this.vm = new Map();
 		this.edges = new Map();
 
-		this.summaryNodes = new Map();
+		this.summaryNodes = new Set();
 		this.displayLayers = new Set();
 	}
 
@@ -37,9 +37,10 @@ export class MultiLayerNetwork{
 		
 		data.forEach(ele => {	
 			// add nodes to list of nodes
+			let cls = typeof attr[0] === 'string' ? ele.class : ele[attr[0][0]].class;
 			let id = typeof attr[0] === 'string' ? ele[attr[0]] : ele[attr[0][0]][attr[0][1]];
 			let symbol = typeof attr[1] === 'string' ? ele[attr[1]] : ele[attr[1][0]][attr[1][1]];
-			this.nodes.set(ele[id_attr], { id, symbol });
+			this.nodes.set(ele[id_attr], { id, symbol, class: cls });
 			
 			// add edges only if a source was identified 
 			if(source !== undefined){
@@ -78,7 +79,6 @@ export class MultiLayerNetwork{
 		while(rows * cols < n){
 			cols/rows < ar ? cols+=1 : rows+=1;
 		}
-		
 		// the row index for the current node (the actual shifting in position
 		// will be handled based on this index)
 		let y = -1;
@@ -91,6 +91,8 @@ export class MultiLayerNetwork{
 			let x = Math.floor(cols/2);
 			y += 1;
 			let j = 1;
+
+			let layerDims = { ymin: y*bb };
 			
 			// and position the nodes one by one, moving away from the center column
 			// and down as the columns get filled
@@ -107,12 +109,10 @@ export class MultiLayerNetwork{
 				}
 			});
 			// add 'layer bounding box' based on the nodes coordinates
-			// layerDims['ymax'] = (y+1) * bb;
-			// this.layers.get(id)['dims'] = layerDims;
-			
+			layerDims['ymax'] = (y+1) * bb;
+			this.layers.get(dl)['dims'] = layerDims;
 		});
 		// return the updated width/height svg viewBox
 		return [cols*bb,(y+1)*bb];
 	}
-
 }

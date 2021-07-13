@@ -10,9 +10,10 @@ export class CompositeNetworkD3{
 	 * @param {object} model 
 	 * @param {object} geneList 
 	 */
-	constructor(model, geneList) {
+	constructor(model, geneList, navigate) {
 		this.model = model;
 		this.geneList = geneList;
+		this.navigate = navigate;
 		// Initialize the list of nodes from the data retrieved from TargetMine
 		this.network = new MultiLayerNetwork();
 
@@ -22,12 +23,12 @@ export class CompositeNetworkD3{
 		this.nodeBB = 50;
 
 		this.width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
-		this.height = parseInt(d3.select('#canvas_compositeNetwork').style('height'));
+		this.height =parseInt(d3.select('#canvas_compositeNetwork').style('height'));
 		
 		// add hard-coded networks from the initial query
 		this.network.addLayer('Gene', 'yellow', 'ellipse', true);
 		this.network.addLayer('Compound', 'lime', 'hexagon', false);
-		this.network.addLayer('miRNA', 'cyan', 'triangle', true);
+		this.network.addLayer('miRNA', 'cyan', 'triangle', false);
 		this.network.addLayer('PPI', 'LightGray', 'ellipse', false);
 
 		// add the source gene list to the network
@@ -44,7 +45,7 @@ export class CompositeNetworkD3{
 				this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.proteins[0].compounds,
 					'Compound', 
 					'objectId',
-					[ ['compound', 'originalId'], ['compound', 'name'] ]
+					[ ['compound', 'identifier'], ['compound', 'name'] ]
 				);
 			}
 			
@@ -79,6 +80,9 @@ export class CompositeNetworkD3{
 			.on('click', function(){ self.setDisplay(this.dataset.layer, this.checked); });
 	}
 
+	/**
+	 * Add arrow points for drawing of edges
+	 */
 	initMarkers(){
 		d3.select('#canvas_compositeNetwork').append('defs')
 			.append('marker')
@@ -95,32 +99,47 @@ export class CompositeNetworkD3{
 	}
 
 	plot(){
-		let [w,h] = this.network.setNodesPositions(this.width, this.height, this.nodeBB);
+		let [w,h] = this.network.setNodesPositions(
+			parseInt(d3.select('#canvas_compositeNetwork').style('width')),
+			parseInt(d3.select('#canvas_compositeNetwork').style('width')), 
+			this.nodeBB);
 		if(this.width !== w || this.height !== h){
 			this.width = w;
 			this.height = h;
 		}
-		
-		// this.plotBackground('#background', this.width);
 
-		// this.plotEdges();
-		this.plotNodes();
-
-		
 		/* finally change the viewbox of the svg */
 		d3.select('svg')
+			.transition()
+			.duration(1000)
 			.attr('viewBox', '0 0'+
 				' '+ this.width + 
 				' '+ this.height )
 		;
+		
+		this.plotBackground('#background', this.width);
+
+		// this.plotEdges();
+		this.plotNodes('#nodes');
+
+		
+
 	}
 
+	/**
+	 * Plot a background to each layer in the graph
+	 * @param {} graph 
+	 * @param {*} width 
+	 */
 	plotBackground(graph, width){
 		/* filter out only displayable layers */
-		// let layers = [...this.network.layers.values()];
+		let data = [];
+		this.network.displayLayers.forEach(dl => {
+			data.push(this.network.layers.get(dl));
+		},this);
 		/* plot a series of layer backgrounds */
 		d3.select(graph).selectAll('rect')
-			.data([...this.network.layers.values()])
+			.data(data)
 			.join('rect')
 				.attr('x', 0)
 				.attr('y', d => d.dims.ymin)
@@ -158,41 +177,48 @@ export class CompositeNetworkD3{
 	}
 
 	/**
-	 * 
+	 * Plot the nodes in the graph
 	 */
-	plotNodes(){
+	plotNodes(graph){
 		let self = this;
-		d3.select('#nodes').selectAll().remove();
-		this.network.vm.forEach((eles,layer) => {
-			// fetch node's coordinates
-			const nodes = [...eles].map(node => {
+		let data = [];
+		this.network.displayLayers.forEach(dl=>{
+			// fetch the layer's color 
+			let color = this.network.layers.get(dl).color;
+			// and the position of each node
+			[...this.network.vm.get(dl).values()].map(node =>{
 				let n = this.network.nodes.get(node);
-				return {x: n.x, y:n.y, id: node};
+				data.push({
+					layer: dl,
+					symbol: n.symbol, 
+					x: n.x, 
+					y:n.y, 
+					id: node, 
+					color });
 			});
-			// and layer's color 
-			let color = this.network.layers.get(layer).color;
-			d3.select('#nodes').append('g')
-				.attr('id', 'layer-'+layer);
+		},this);
+
+		d3.select(graph).selectAll('g').remove();
+		// plot the nodes
+		let g = d3.select(graph).selectAll('g')
+			.data(data)
+			.join('g')
+			.attr('transform', d => 'translate('+d.x+','+d.y+')');
+		
+		g.append('circle')
+			.attr('r',this.r)
+			.attr('fill', d => d.color)
+			.attr('stroke', 'black')
+			.attr('id', d => d.id)
+			// .on('click', (d,i) => {console.log(d,i);})
+		;
+
+		g.append('text')
+			.text(d => d.symbol)
+			.attr('dy', '.35em')
+			.style('font-size', function(){ return Math.min(self.r, (1.7 * self.r - 8) / this.getComputedTextLength() * 24)+'px'; })
+			.style('text-anchor', 'middle');
 			
-			// group the nodes within a single layer
-			d3.select('#layer-'+layer).selectAll('g')
-				.data(nodes)
-				.enter().append('g')
-					.append('circle')
-					.attr('r',this.r)
-					.attr('fill', color)
-					.attr('stroke', 'black')
-					.attr('cx', d => d.x)
-					.attr('cy', d => d.y)
-					.attr('id', d => d.id)
-					.on('click', function(){
-						let node = self.network.nodes.get(parseInt(this.id));
-						window.alert(node.id, node.symbol);
-					})
-					
-				.exit().remove()
-			;
-		});
 	}
 
 	/**
@@ -204,7 +230,19 @@ export class CompositeNetworkD3{
 			this.network.displayLayers.add(layer);
 		else
 			this.network.displayLayers.delete(layer);
+		this.plot();
 	}
 
+	setInfo(target){
+		// target.layer
+		d3.select('#nodeSymbol-div > label')
+			.text('Symbol: '+target.symbol);
+		d3.select('#nodeId-div > label')
+			.text('View in TargetMine');
+		// .on('click',function(){
+		// 	console.log('nav',self.navigate);
+		// });
+		
 
+	}
 }
