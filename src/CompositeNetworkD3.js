@@ -12,7 +12,6 @@ export class CompositeNetworkD3{
 	 */
 	constructor(model, geneList, navigate) {
 		this.model = model;
-		this.geneList = geneList;
 		this.navigate = navigate;
 		// Initialize the list of nodes from the data retrieved from TargetMine
 		this.network = new MultiLayerNetwork();
@@ -22,56 +21,65 @@ export class CompositeNetworkD3{
 		this.nodeMargin = 10;
 		this.nodeBB = 50;
 
-		this.width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
-		this.height =parseInt(d3.select('#canvas_compositeNetwork').style('height'));
+		this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
+		this._height =parseInt(d3.select('#canvas_compositeNetwork').style('height'));
 		
 		// add hard-coded networks from the initial query
-		this.network.addLayer('Gene', 'yellow', 'ellipse', true);
-		this.network.addLayer('Compound', 'lime', 'hexagon', false);
-		this.network.addLayer('miRNA', 'cyan', 'triangle', false);
-		this.network.addLayer('PPI', 'LightGray', 'ellipse', false);
+		this.network.addLayer('Gene', 'yellow', 'ellipse', true, false);
+		// this.network.addLayer('Compound', 'lime', 'hexagon', false);
+		this.network.addLayer('miRNA', 'cyan', 'triangle', false, true);
+		// this.network.addLayer('PPI', 'LightGray', 'ellipse', false);
 
 		// add the source gene list to the network
-		this.network.parseNodesAndEdges(undefined, geneList, 
-			'Gene', 
-			'objectId', 
-			['primaryIdentifier', 'symbol']
-		);
-
+		let genes = geneList.map(g => {
+			return {
+				dbid: g.objectId,
+				id: g.primaryIdentifier,
+				symbol: g.symbol
+			};
+		});
+		this.network.addNodesAndEdges(undefined, 'Gene', genes);
+		
 		// add all the nodes and edges found starting from the initial gene list
 		geneList.forEach(sourceNode => {
 			// add compound interaction - if any available 
-			if(sourceNode.proteins !== undefined ){
-				this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.proteins[0].compounds,
-					'Compound', 
-					'objectId',
-					[ ['compound', 'identifier'], ['compound', 'name'] ]
-				);
-			}
+			// if(sourceNode.proteins !== undefined ){
+			// 	this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.proteins[0].compounds,
+			// 		'Compound', 
+			// 		'objectId',
+			// 		[ ['compound', 'identifier'], ['compound', 'name'] ]
+			// 	);
+			// }
 			
 			// miRNA interactions
 			if(sourceNode.miRNAInteractions !== undefined){
-				this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.miRNAInteractions,
-					'miRNA',
-					'objectId',
-					[ ['miRNA', 'primaryIdentifier'], ['miRNA', 'symbol'] ]
-				);
+				let miRNA = sourceNode.miRNAInteractions.map(miR => {
+					return {
+						dbid: miR.miRNA.objectId,
+						id: miR.miRNA.primaryIdentifier,
+						symbol: miR.miRNA.symbol
+					};
+				});
+				this.network.addNodesAndEdges(sourceNode.objectId, 'miRNA', miRNA);
 			}
 
 			// PPI interactions
-			if(sourceNode.interactions !== undefined){
-				this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.interactions,
-					'PPI',
-					'objectId',
-					[ ['gene2', 'primaryIdentifier'], ['gene2', 'symbol'] ]
-				);
-			}
+			// if(sourceNode.interactions !== undefined){
+			// 	this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.interactions,
+			// 		'PPI',
+			// 		'objectId',
+			// 		[ ['gene2', 'primaryIdentifier'], ['gene2', 'symbol'] ]
+			// 	);
+			// }
 		});
+		this.network.groupNodes();
+		// console.log(this.network.groupedNodes.get('miRNA'));
 
-		this.initMarkers();
+		// this.initMarkers();
 		this.initFunctions();
-
 		this.plot();
+
+		window.addEventListener('resize', () => {this.plot();});
 	}
 
 	initFunctions(){
@@ -103,9 +111,9 @@ export class CompositeNetworkD3{
 			parseInt(d3.select('#canvas_compositeNetwork').style('width')),
 			parseInt(d3.select('#canvas_compositeNetwork').style('width')), 
 			this.nodeBB);
-		if(this.width !== w || this.height !== h){
-			this.width = w;
-			this.height = h;
+		if(this._width !== w || this._height !== h){
+			this._width = w;
+			this._height = h;
 		}
 
 		/* finally change the viewbox of the svg */
@@ -113,11 +121,11 @@ export class CompositeNetworkD3{
 			.transition()
 			.duration(1000)
 			.attr('viewBox', '0 0'+
-				' '+ this.width + 
-				' '+ this.height )
+				' '+ this._width + 
+				' '+ this._height )
 		;
 		
-		this.plotBackground('#background', this.width);
+		this.plotBackground('#background', this._width);
 
 		// this.plotEdges();
 		this.plotNodes('#nodes');
@@ -163,10 +171,6 @@ export class CompositeNetworkD3{
 			.enter().append('path')
 				.attr('class', 'arrow')
 				.attr('marker-end', 'url(#arrow)')
-				// .attr('x1',d => d.sx)
-				// .attr('x2',d => d.tx)
-				// .attr('y1',d => d.sy)
-				// .attr('y2',d => d.ty)
 				.attr('d', d3.linkVertical()
 					.source(d => d.source)
 					.target(d => d.target)
@@ -218,7 +222,6 @@ export class CompositeNetworkD3{
 			.attr('dy', '.35em')
 			.style('font-size', function(){ return Math.min(self.r, (1.7 * self.r - 8) / this.getComputedTextLength() * 24)+'px'; })
 			.style('text-anchor', 'middle');
-			
 	}
 
 	/**
@@ -242,7 +245,5 @@ export class CompositeNetworkD3{
 		// .on('click',function(){
 		// 	console.log('nav',self.navigate);
 		// });
-		
-
 	}
 }

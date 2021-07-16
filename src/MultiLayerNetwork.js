@@ -8,8 +8,9 @@ export class MultiLayerNetwork{
 		this.vm = new Map();
 		this.edges = new Map();
 
-		this.summaryNodes = new Set();
+		this.groupedNodes = new Map();
 		this.displayLayers = new Set();
+		this.groupedLayers = new Set();
 	}
 
 	/**
@@ -18,43 +19,59 @@ export class MultiLayerNetwork{
 	 * @param {string} color 
 	 * @param {string} shape 
 	 * @param {boolean} visible 
+	 * @param {boolean} grouped
 	 */
-	addLayer(name, color, shape, visible){
+	addLayer(name, color, shape, visible=false, grouped=true){
 		this.layers.set(name, {color, shape});
 		if(visible) this.displayLayers.add(name);
+		if(grouped) this.groupedLayers.add(name);
 	}
 
 	/**
-	 * @param {string} source
-	 * @param {Array} data 
-	 * @param {string} layer 
-	 * @param {string} id_attr 
-	 * @param {Array} attr 
+	 * 
+	 * @param {*} source 
+	 * @param {*} layer 
+	 * @param {*} data 
 	 */
-	parseNodesAndEdges(source, data, layer, id_attr, attr){
+	addNodesAndEdges(source, layer, data){
 		// retrieve current vm for the layer
 		let vm = this.vm.get(layer) || new Set();
-		
-		data.forEach(ele => {	
-			// add nodes to list of nodes
-			let cls = typeof attr[0] === 'string' ? ele.class : ele[attr[0][0]].class;
-			let id = typeof attr[0] === 'string' ? ele[attr[0]] : ele[attr[0][0]][attr[0][1]];
-			let symbol = typeof attr[1] === 'string' ? ele[attr[1]] : ele[attr[1][0]][attr[1][1]];
-			this.nodes.set(ele[id_attr], { id, symbol, class: cls });
-			
-			// add edges only if a source was identified 
-			if(source !== undefined){
-				this.edges.set(source+'-'+ele[id_attr], {source, target: ele[id_attr]});
+		data.forEach(ele => {
+			// add the node to the list (if required)
+			let parent = source === undefined ? '' : source.toString();
+			if(!this.nodes.has(ele.dbid)){
+				this.nodes.set(ele.dbid, {id: ele.id, symbol: ele.symbol, parent});
 			}
+			else{ // if node is already in the network only update its parents
+				if(source !== undefined){
+					let node = this.nodes.get(ele.dbid);
+					node.parent = node.parent+'-'+parent;
+				}
+			}
+			// add edges only if a source was identified 
+			if(source !== undefined)
+				this.edges.set(source+'-'+ele.dbid, {source, target: ele.dbid});
 			
 			// add reference between layer and node
-			vm.add(ele[id_attr]);
+			vm.add(ele.dbid);
 		}, this);
 		this.vm.set(layer, vm); 
 	}
 
 	groupNodes(){
-
+		this.groupedLayers.forEach(gl => {
+			let layer = this.vm.get(gl);
+			let nodes = new Map();
+			layer.forEach(nid => {
+				const node = this.nodes.get(nid);
+				// console.log(node.parent);
+				if(!nodes.has(node.parent))
+					nodes.set(node.parent, [nid]);
+				else
+					nodes.get(node.parent).push(nid);
+			});
+			this.groupedNodes.set(gl, nodes);
+		});
 	}
 
 	/**

@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="dist/style.css">
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 	<script>
-		var socket = io("http://10.100.60.138:3457");
+		var socket = io("http://10.100.60.138:3458");
     socket.on('reload', function(){
 			document.location.reload();
     });
@@ -52,7 +52,8 @@
         	Gene: {
             class: 'Gene',
             format: 'ids',
-            value: [7952832, 7436844, 7152203, 7325222, 7423871] // DBids... they change based on server selection
+            //value: [7952832, 7436844, 7152203, 7325222, 7423871] // DBids... they change based on server selection
+						value: [7095628, 7418008]
           }
         };
 

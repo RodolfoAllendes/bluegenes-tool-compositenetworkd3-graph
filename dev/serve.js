@@ -2,9 +2,9 @@ var express = require('express');
 var serveStatic = require('serve-static');
 var chokidar = require('chokidar');
 var spawnCommand = require('child_process').spawnSync;
-var port = 3456;
+var port = 1234;
 
-var io = require('socket.io')(3457);
+var io = require('socket.io')(3458);
 var app = express();
 
 var watcher = chokidar.watch('src');
