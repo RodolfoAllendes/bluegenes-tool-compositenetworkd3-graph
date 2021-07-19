@@ -38,7 +38,7 @@ export class CompositeNetworkD3{
 				symbol: g.symbol
 			};
 		});
-		this.network.addNodesAndEdges(undefined, 'Gene', genes);
+		this.network.addNodesAndEdges('Gene', genes);
 		
 		// add all the nodes and edges found starting from the initial gene list
 		geneList.forEach(sourceNode => {
@@ -60,7 +60,7 @@ export class CompositeNetworkD3{
 						symbol: miR.miRNA.symbol
 					};
 				});
-				this.network.addNodesAndEdges(sourceNode.objectId, 'miRNA', miRNA);
+				this.network.addNodesAndEdges('miRNA', miRNA, sourceNode.objectId, 'Gene');
 			}
 
 			// PPI interactions
@@ -73,9 +73,8 @@ export class CompositeNetworkD3{
 			// }
 		});
 		this.network.groupNodes();
-		// console.log(this.network.groupedNodes.get('miRNA'));
 
-		// this.initMarkers();
+		this.initMarkers();
 		this.initFunctions();
 		this.plot();
 
@@ -131,9 +130,8 @@ export class CompositeNetworkD3{
 		
 		this.plotBackground('#background', this._width);
 
-		// this.plotEdges();
-		this.plotNodes('#nodes', 
-			d3.select('#cb-nodeGroup').property('checked'));
+		this.plotEdges('#edges', d3.select('#cb-nodeGroup').property('checked'));
+		this.plotNodes('#nodes', d3.select('#cb-nodeGroup').property('checked'));
 	}
 
 	/**
@@ -160,26 +158,62 @@ export class CompositeNetworkD3{
 		;
 	}
 
-	plotEdges(){
-		const edges = [...this.network.edges.values()].map(edge => {
-			let s = this.network.nodes.get(edge.source);
-			let t = this.network.nodes.get(edge.target);
-			return { source: [s.x, s.y+this.r], target: [t.x, t.y-this.r-2]  };
-		});
-		
+	/**
+	 * Plot the edges in the graph
+	 * @param {} graph
+	 * @param {boolean} groups display groups of nodes
+	 */
+	plotEdges(graph, groups){
+		let data = [];
 
-		d3.select('#edges').selectAll('path')
-			.data(edges)
-			.enter().append('path')
-				.attr('class', 'arrow')
-				.attr('marker-end', 'url(#arrow)')
-				.attr('d', d3.linkVertical()
-					.source(d => d.source)
-					.target(d => d.target)
-				)
+		if(this.network.displayLayers.size >= 2){
+			this.network.displayLayers.forEach(dl => {
+				if(groups && this.network.groupedLayers.has(dl)){
+					this.network.groupedEdges.get(dl).forEach(edge => {
+						if(this.network.displayLayers.has(edge.sourceLayer)){
+							let s = this.network.nodes.get(edge.source);
+							let t = this.network.groupedNodes.get(dl).get(edge.target);
+							data.push({
+								source: [s.x, s.y],
+								target: [t.x, t.y]
+							});
+						}
+					});
+				}
+				else{
+					this.network.edges.get(dl).forEach(edge => {
+						let s = this.network.nodes.get(edge.source);
+						let t = this.network.nodes.get(edge.target);
+						data.push({ 
+							source: [s.x, s.y+this.r], 
+							target: [t.x, t.y-this.r-2] 
+						});
+					});
+				}
+			});
+		}
+
+		// d3.select(graph).selectAll('path')
+		// 	.data(data)
+		// 	.join('path')
+		// 		.attr('class', 'arrow')
+		// 		.attr('marker-end', 'url(#arrow)')
+		// 		.attr('d', d3.linkVertical()
+		// 			.source(d => d.source)
+		// 			.target(d => d.target)
+		// 		)
+		// 		.attr('stroke', 'black')
+		// 		.style('opacity', 0.2);
+
+		d3.select(graph).selectAll('line')
+			.data(data)
+			.join('line')
+				.attr('x1', d => d.source[0])
+				.attr('x2', d => d.target[0])
+				.attr('y1', d => d.source[1])
+				.attr('y2', d => d.target[1])
 				.attr('stroke', 'black')
-				.style('opacity', 0.2)
-			.exit().remove();
+				.style('opacity', 0.2);
 	}
 
 	/**

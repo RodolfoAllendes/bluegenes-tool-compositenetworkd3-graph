@@ -8,9 +8,11 @@ export class MultiLayerNetwork{
 		this.vm = new Map();
 		this.edges = new Map();
 
-		this.groupedNodes = new Map();
-		this.displayLayers = new Set();
 		this.groupedLayers = new Set();
+		this.groupedNodes = new Map();
+		this.groupedEdges = new Map();
+
+		this.displayLayers = new Set();
 	}
 
 	/**
@@ -29,33 +31,42 @@ export class MultiLayerNetwork{
 
 	/**
 	 * 
-	 * @param {*} source 
+	 * @param {*} sourceNode 
 	 * @param {*} layer 
 	 * @param {*} data 
 	 */
-	addNodesAndEdges(source, layer, data){
+	addNodesAndEdges(layer, data, sourceNode=undefined, sourceLayer=undefined){
 		// retrieve current vm for the layer
 		let vm = this.vm.get(layer) || new Set();
+		let edges = this.edges.get(layer) || new Map();
 		data.forEach(ele => {
 			// add the node to the list (if required)
-			let parent = source === undefined ? '' : source.toString();
 			if(!this.nodes.has(ele.dbid)){
-				this.nodes.set(ele.dbid, {id: ele.id, symbol: ele.symbol, parent});
+				let n = {
+					id: ele.id, 
+					symbol: ele.symbol, 
+					...(sourceNode !== undefined && { parents: [sourceNode.toString()] } )
+				};
+				this.nodes.set(ele.dbid, n);
 			}
 			else{ // if node is already in the network only update its parents
-				if(source !== undefined){
-					let node = this.nodes.get(ele.dbid);
-					node.parent = node.parent+'-'+parent;
+				if(sourceNode !== undefined){
+					this.nodes.get(ele.dbid).parents.push(sourceNode.toString());
 				}
 			}
 			// add edges only if a source was identified 
-			if(source !== undefined)
-				this.edges.set(source+'-'+ele.dbid, {source, target: ele.dbid});
-			
+			if(sourceNode !== undefined)
+				edges.set(sourceNode+'-'+ele.dbid, {
+					source: sourceNode, 
+					target: ele.dbid,
+					sourceLayer,
+					targetLayer: layer
+				});
 			// add reference between layer and node
 			vm.add(ele.dbid);
 		}, this);
 		this.vm.set(layer, vm); 
+		this.edges.set(layer, edges);
 	}
 
 	/**
@@ -68,14 +79,27 @@ export class MultiLayerNetwork{
 		this.groupedLayers.forEach(gl => {
 			let layer = this.vm.get(gl);
 			let nodes = new Map();
+			let edges = new Map();
 			layer.forEach(nid => {
 				const node = this.nodes.get(nid);
-				if(!nodes.has(node.parent))
-					nodes.set(node.parent, { 'group': [nid] });
-				else
-					nodes.get(node.parent).group.push(nid);
+				let p = parseInt(node.parents.reduce((c,a) => a+c, ''));
+				if(!nodes.has(p)){
+					nodes.set(p, { 'group': [nid] });
+					node.parents.forEach(d => {
+						edges.set(d+'-'+p,{
+							source: parseInt(d),
+							target: p,
+							sourceLayer: 'Gene',
+							targetLayer: gl
+						});
+					});
+				}
+				else{
+					nodes.get(p).group.push(nid);
+				}
 			});
 			this.groupedNodes.set(gl, nodes);
+			this.groupedEdges.set(gl, edges);
 		});
 	}
 
