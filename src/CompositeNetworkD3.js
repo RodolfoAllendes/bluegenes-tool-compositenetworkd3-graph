@@ -84,8 +84,11 @@ export class CompositeNetworkD3{
 
 	initFunctions(){
 		let self = this;
-		d3.selectAll('#rightColumn_compositeNetwork input')
-			.on('click', function(){ self.setDisplay(this.dataset.layer, this.checked); });
+		d3.selectAll('#rightColumn_compositeNetwork input.displayCB')
+			.on('change', function(){ self.setDisplay(this.dataset.layer, this.checked); });
+
+		d3.selectAll('#rightColumn_compositeNetwork input.nodeCB')
+			.on('change', function(){ self.plot(); });
 	}
 
 	/**
@@ -110,7 +113,8 @@ export class CompositeNetworkD3{
 		let [w,h] = this.network.setNodesPositions(
 			parseInt(d3.select('#canvas_compositeNetwork').style('width')),
 			parseInt(d3.select('#canvas_compositeNetwork').style('width')), 
-			this.nodeBB);
+			this.nodeBB,
+			d3.select('#cb-nodeGroup').property('checked'));
 		if(this._width !== w || this._height !== h){
 			this._width = w;
 			this._height = h;
@@ -128,10 +132,8 @@ export class CompositeNetworkD3{
 		this.plotBackground('#background', this._width);
 
 		// this.plotEdges();
-		this.plotNodes('#nodes');
-
-		
-
+		this.plotNodes('#nodes', 
+			d3.select('#cb-nodeGroup').property('checked'));
 	}
 
 	/**
@@ -182,24 +184,41 @@ export class CompositeNetworkD3{
 
 	/**
 	 * Plot the nodes in the graph
+	 * @param {} graph
+	 * @param {boolean} groups display groups of nodes
 	 */
-	plotNodes(graph){
+	plotNodes(graph, groups){
 		let self = this;
 		let data = [];
 		this.network.displayLayers.forEach(dl=>{
 			// fetch the layer's color 
 			let color = this.network.layers.get(dl).color;
 			// and the position of each node
-			[...this.network.vm.get(dl).values()].map(node =>{
-				let n = this.network.nodes.get(node);
-				data.push({
-					layer: dl,
-					symbol: n.symbol, 
-					x: n.x, 
-					y:n.y, 
-					id: node, 
-					color });
-			});
+			if(groups && this.network.groupedLayers.has(dl)){
+				[...this.network.groupedNodes.get(dl).values()].map(node =>{
+					data.push({
+						layer:dl,
+						symbol: node.group.length,
+						x: node.x,
+						y: node.y,
+						id: node,
+						color
+					});
+				});
+			}
+			else{
+				[...this.network.vm.get(dl).values()].map(node =>{
+					let n = this.network.nodes.get(node);
+					data.push({
+						layer: dl,
+						symbol: n.symbol, 
+						x: n.x, 
+						y: n.y, 
+						id: node, 
+						color 
+					});
+				});
+			}
 		},this);
 
 		d3.select(graph).selectAll('g').remove();

@@ -52,25 +52,29 @@ function main(el, service, imEntity, state, config, navigate) {
 					<div id="interactions-div" class="flex-table">	
 						<label>Interaction Types:</label>
 						<div id="interactions-pci" class="flex-row">
-							<input id="cb-pci" type="checkbox" data-layer="Compound"></input>
+							<input id="cb-pci" class="displayCB" type="checkbox" data-layer="Compound"></input>
 							<label class="row-label">PCIs</label>
 						</div>
 						
 						<div id="interactions-tf" class="flex-row">
-							<input id="cb-tf" type="checkbox" data-layer="Transcription"></input>
+							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="Transcription"></input>
 							<label class="row-label">TF targets<label>
 						</div>
 						
 						<div id="interactions-ppi" class="flex-row">
-							<input id="cb-ppi" type="checkbox" data-layer="Interactions"></input>
+							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="Interactions"></input>
 							<label class="row-label">PPIs (HCDP)</label>
 						</div>
 						<div id="interactions-mti" class="flex-row">
-							<input id="cb-mti" type="checkbox" data-layer="miRNA"></input>
+							<input id="cb-mti" class="displayCB" type="checkbox" data-layer="miRNA"></input>
 							<label class="row-label">MTIs</label>
 						</div>
 					</div>
 					<div id="information-div" class="flex-table">
+						<div id="nodes-groups" class="flex-row">
+							<input id="cb-nodeGroup" class="nodeCB" type="checkbox" data-layer="NodeGroup"></input>
+							<label class="row-label">Grouped Nodes</label>
+						</div>
 						<label>Node Information:</label>
 						<div id="nodeLayer-div" class="flex-row">
 							<label class="row-label">Click on a node to see details...</label>
