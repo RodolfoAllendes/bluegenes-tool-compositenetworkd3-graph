@@ -26,7 +26,7 @@ export class CompositeNetworkD3{
 		
 		// add hard-coded networks from the initial query
 		this.network.addLayer('Gene', 'yellow', 'ellipse', true, false);
-		// this.network.addLayer('Compound', 'lime', 'hexagon', false);
+		this.network.addLayer('Compound', 'lime', 'hexagon', false, true);
 		this.network.addLayer('miRNA', 'cyan', 'triangle', false, true);
 		// this.network.addLayer('PPI', 'LightGray', 'ellipse', false);
 
@@ -42,14 +42,18 @@ export class CompositeNetworkD3{
 		
 		// add all the nodes and edges found starting from the initial gene list
 		geneList.forEach(sourceNode => {
+			
 			// add compound interaction - if any available 
-			// if(sourceNode.proteins !== undefined ){
-			// 	this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.proteins[0].compounds,
-			// 		'Compound', 
-			// 		'objectId',
-			// 		[ ['compound', 'identifier'], ['compound', 'name'] ]
-			// 	);
-			// }
+			if(sourceNode.proteins !== undefined ){
+				let compounds = sourceNode.proteins[0].compounds.map(cpd => {
+					return {
+						dbid: cpd.objectId,
+						id: cpd.identifier,
+						symbol: cpd.name
+					};
+				});
+				this.network.addNodesAndEdges('Compound', compounds, sourceNode.objectId, 'Gene');
+			}
 			
 			// miRNA interactions
 			if(sourceNode.miRNAInteractions !== undefined){
