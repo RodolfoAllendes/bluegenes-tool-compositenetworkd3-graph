@@ -43,26 +43,26 @@ function main(el, service, imEntity, state, config, navigate) {
 		<div class="rootContainer">
 			<div id="compositeNetworkD3-graph" class="targetmineGraphDisplayer">
 				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG">
-					<g id="background"></g>
-					<g id="edges"></g>
-					<g id="nodes"></g>
+						<g id="background"></g>
+						<g id="edges"></g>
+						<g id="nodes"></g>
 				</svg>
 			
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
 					<div id="interactions-div" class="flex-table">	
 						<label>Interaction Types:</label>
 						<div id="interactions-pci" class="flex-row">
-							<input id="cb-pci" class="displayCB" type="checkbox" data-layer="Compound"></input>
+							<input id="cb-pci" class="displayCB" type="checkbox" data-layer="Compound" disabled></input>
 							<label class="row-label">PCIs</label>
 						</div>
 						
 						<div id="interactions-tf" class="flex-row">
-							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="Transcription"></input>
+							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="Transcription" disabled></input>
 							<label class="row-label">TF targets<label>
 						</div>
 						
 						<div id="interactions-ppi" class="flex-row">
-							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="Interactions"></input>
+							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="Interactions" disabled></input>
 							<label class="row-label">PPIs (HCDP)</label>
 						</div>
 						<div id="interactions-mti" class="flex-row">

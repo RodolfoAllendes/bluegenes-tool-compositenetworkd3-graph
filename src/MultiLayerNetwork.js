@@ -113,73 +113,77 @@ export class MultiLayerNetwork{
 	 * @param {boolean} groups display groups of nodes
 	 * @returns the pair [width, height] for the viewbox of the svg container
 	 */
-	setNodesPositions(width, height, bb, groups){
+	setNodesPositions(width, height, groups){
 		// calculate the number of nodes that need to be displayed
-		let n = 0;
-		this.displayLayers.forEach(dl => {
+		let n = [...this.displayLayers.keys()].map(dl => {
 			if(groups && this.groupedLayers.has(dl))
-				n += this.groupedNodes.get(dl).size;
-			else
-				n += this.vm.get(dl).size;
+				return this.groupedNodes.get(dl).size;
+			return this.vm.get(dl).size;
 		});
-			
-		// how many nodes fit the screen horizontally given the pre-defined node 
-		// bounding box
-		let ar = width/height;
-		let cols = Math.floor(width/bb);
-		let rows = Math.floor(height/bb);
-		while(rows * cols < n){
-			cols/rows < ar ? cols+=1 : rows+=1;
+		
+		// based on the number of nodes to be displayed on each layer, decide the 
+		// number of rows and columns the graph should have
+		let layerRows = Array(this.displayLayers.size).fill(1);
+		let totalRows = layerRows.reduce((a,b) => a+b, 0);
+		let totalCols = Math.ceil(totalRows*width/height);
+		let fits = layerRows.map((r,i) => r*totalCols >= n[i]);
+		while (fits.includes(false)){
+			layerRows = layerRows.map((r,i) => r*totalCols < n[i]? r+1 : r);// 		return acc && cur*cols >= n[i]
+			totalRows = layerRows.reduce((a,b) => a+b, 0);
+			totalCols = Math.ceil(totalRows*width/height);
+			fits = layerRows.map((r,i) => r*totalCols >= n[i]);
 		}
-		// the row index for the current node (the actual shifting in position
+		layerRows = layerRows.map((r,i)=> Math.ceil(n[i]/totalCols));
+		
+		// // the row index for the current node (the actual shifting in position
 		// will be handled based on this index)
-		let y = -1;
+		let dy = height/totalRows; 
+		let dx = width/totalCols;
+		let bb = Math.min(dx,dy); // the bounding box for a node
+		let r = bb*.3; // radio of the circle used to represent a node
+
 		// actually position the nodes on each layer
+		let y = 0; // initial row
 		this.displayLayers.forEach(dl => {
-			// retrieve the list of nodes for the current layer
-			let layer = undefined;//this.vm.get(dl);
 			// we set the starting row and column for node positioning
-			let x0 = bb/2;
-			let x = Math.floor(cols/2);
-			y += 1;
+			let x = Math.floor(totalCols/2); // initial column (at the center)
 			let j = 1;
+			let ymin = y*dy;
 
-			let layerDims = { ymin: y*bb };
-
-			if(groups && this.groupedLayers.has(dl)){
-				layer = this.groupedNodes.get(dl);
-			}
-			else{
-				layer = this.vm.get(dl);
-			}
+			// get a list of nodes or grouped nodes
+			let layer = groups && this.groupedLayers.has(dl) ? 
+				this.groupedNodes.get(dl) :
+				this.vm.get(dl);
 			
 			// and position the nodes one by one, moving away from the center column
 			// and down as the columns get filled
 			layer.forEach((node) => {
-				
+				let px = (dx*(x%totalCols)) + (dx/2);
+				let py = (dy*y) + (dy/2);
 				if(groups && this.groupedLayers.has(dl)){
-					node['x'] = x0 + (bb*(x%cols));
-					node['y'] = (bb*(y+1))-(bb/2);
+					node['x'] = px;
+					node['y'] = py;//(dy*(y+1))-(bb/2);
 				}
 				else{
 					let n = this.nodes.get(node);
-					n['x'] = x0 + (bb*(x%cols));
-					n['y'] = (bb*(y+1))-(bb/2);
+					n['x'] = px;
+					n['y'] = py;//(dy*(y+1))-(dy/2);
 				}
 					
 				x += ((-1)**j)*j;
 				j += 1;
-				if(x >= cols || x < 0){
-					x = Math.floor(cols/2);
+				if(x >= totalCols || x < 0){
+					x = Math.floor(totalCols/2);
 					y += 1;
 					j = 1;
 				}
 			});
 			// add 'layer bounding box' based on the nodes coordinates
-			layerDims['ymax'] = (y+1) * bb;
-			this.layers.get(dl)['dims'] = layerDims;
+			// let layerDims = { ymin: y*bb };layerDims['ymax'] = (y+1) * bb;
+			y += 1;
+			this.layers.get(dl)['dims'] = { ymin, ymax: y*dy };
 		},this);
 		// return the updated width/height svg viewBox
-		return [cols*bb,(y+1)*bb];
+		return r; //[totalCols*bb,(y+1)*bb];
 	}
 }
