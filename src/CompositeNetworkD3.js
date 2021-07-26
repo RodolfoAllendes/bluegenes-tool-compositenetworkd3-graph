@@ -56,9 +56,9 @@ export class CompositeNetworkD3{
 			if(sourceNode.proteins !== undefined ){
 				let compounds = sourceNode.proteins[0].compounds.map(cpd => {
 					return {
-						dbid: cpd.objectId,
-						id: cpd.identifier,
-						symbol: cpd.name
+						dbid: cpd.compound.objectId,
+						id: cpd.compound.identifier,
+						symbol: cpd.compound.name
 					};
 				});
 				this.network.addNodesAndEdges('Compound', compounds, sourceNode.objectId, 'Gene');
@@ -142,6 +142,9 @@ export class CompositeNetworkD3{
 					self._height, 
 					d3.select('#cb-nodeGroup').property('checked')
 				);
+				d3.select('#zoomRect')
+					.call(self.zoom.transform, d3.zoomIdentity)
+					.call(self.zoom);
 				self.plot();
 			});
 
@@ -186,8 +189,7 @@ export class CompositeNetworkD3{
 				.attr('width', width)
 				.attr('height', d => d.dims.ymax - d.dims.ymin)
 				.attr('fill', d => d.color)
-				.style('opacity', 0.1)
-		;
+				.style('opacity', 0.1);
 	}
 
 	/**
@@ -295,7 +297,12 @@ export class CompositeNetworkD3{
 			.text(d => d.symbol)
 			.attr('dx', d => d.x)
 			.attr('dy', d => d.y)//'.35em')
-			.style('font-size', function(){ return Math.min(self.r, (1.7 * self.r - 8) / this.getComputedTextLength() * 24)+'px'; })
+			.style('font-size', function(){ 
+				let size = (1.7 * self.r - 8) / this.getComputedTextLength() * 24;
+				size = size <0 ? 0 : size;
+				// console.log(size);
+				return Math.min(self.r, size)+'px'; 
+			})
 			.style('text-anchor', 'middle');
 	}
 
