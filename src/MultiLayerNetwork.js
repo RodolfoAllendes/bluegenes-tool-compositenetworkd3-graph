@@ -23,7 +23,7 @@ export class MultiLayerNetwork{
 	 * @param {boolean} visible 
 	 * @param {boolean} grouped
 	 */
-	addLayer(name, color, shape, visible=false, grouped=true){
+	addLayer(name, color, shape, grouped=true, visible=false){
 		this.layers.set(name, {color, shape});
 		if(visible) this.displayLayers.add(name);
 		if(grouped) this.groupedLayers.add(name);
@@ -31,11 +31,37 @@ export class MultiLayerNetwork{
 
 	/**
 	 * 
-	 * @param {*} sourceNode 
 	 * @param {*} layer 
 	 * @param {*} data 
 	 */
-	addNodesAndEdges(layer, data, sourceNode=undefined, sourceLayer=undefined){
+	addNodes(layer, data){
+		// retrieve current vm for the layer
+		let vm = this.vm.get(layer) || new Set();
+		data.forEach(ele => {
+			// add the node to the list (if required)
+			if(!this.nodes.has(ele.dbid)){
+				let n = {
+					id: ele.id, 
+					symbol: ele.symbol,
+					isGroup: false, 
+					...(ele.parent !== undefined && { parents: [ele.parent] } )
+				};
+				this.nodes.set(ele.dbid, n);
+			}
+			else{ // if node is already in the network only update its parents
+				if(ele.parent !== undefined){
+					this.nodes.get(ele.dbid).parents.push(ele.parent);
+				}
+			}
+			// add reference between layer and node
+			vm.add(ele.dbid);
+		}, this);
+		// update the vm element for the layer
+		this.vm.set(layer, vm); 
+		
+	}
+
+	addEdges(layer, data, sourceNode=undefined, sourceLayer=undefined){
 		// retrieve current vm for the layer
 		let vm = this.vm.get(layer) || new Set();
 		let edges = this.edges.get(layer) || new Map();
@@ -67,40 +93,74 @@ export class MultiLayerNetwork{
 		}, this);
 		this.vm.set(layer, vm); 
 		this.edges.set(layer, edges);
+	
+
 	}
 
 	/**
-	 * Define 'group' nodes.
+	 * Define all 'group' nodes for a given layer.
 	 * Based on the parents for each node in a layer, define groupings that 
-	 * condense into a single element all those nodes that have share the same
-	 * parents.
+	 * condense into a single element all those nodes that share the same parents.
+	 * 
+	 * @param {string} layerName the name of the layer to group
 	 */
-	groupNodes(){
-		this.groupedLayers.forEach(gl => {
-			let layer = this.vm.get(gl);
-			let nodes = new Map();
-			let edges = new Map();
-			layer.forEach(nid => {
-				const node = this.nodes.get(nid);
-				let p = parseInt(node.parents.reduce((c,a) => a+c, ''));
-				if(!nodes.has(p)){
-					nodes.set(p, { 'group': [nid] });
-					node.parents.forEach(d => {
-						edges.set(d+'-'+p,{
-							source: parseInt(d),
-							target: p,
-							sourceLayer: 'Gene',
-							targetLayer: gl
-						});
-					});
-				}
-				else{
-					nodes.get(p).group.push(nid);
-				}
-			});
-			this.groupedNodes.set(gl, nodes);
-			this.groupedEdges.set(gl, edges);
+	groupNodesByLayer(layerName){
+		let layer = this.vm.get(layerName);
+		// we will generate a series of new 'grouped' nodes and edges
+		let nodes = new Map();
+		// let edges = [];
+		let newVm = new Set();
+		
+		layer.forEach(nid => {
+			// retrieve the node and remove it from the list of nodes
+			const node = this.nodes.get(nid);
+			this.nodes.delete(nid);
+			// generate an id for the new node, based on its parents and the layer
+			// to witch it belongs
+			let p = parseInt(node.parents.reduce((c,a) => a+c, ''));
+			p += TSH(layerName);
+			p = -Math.abs(p);
+			
+			if(!nodes.has(p)){
+				// add new node
+				nodes.set(p, { 'group': [node], 'parents': node.parents });
+				// add edges
+				// node.parents.forEach(d => {
+				// 	this.edges.delete(d+'-'+nid);
+				// 	edges.set(d+'-'+p,{
+				// 		source: parseInt(d),
+				// 		target: p,
+				// 		sourceLayer: 'Gene',
+				// 		targetLayer: layerName
+				// 	});
+				// });
+				
+			}
+			else{
+				nodes.get(p).group.push(node);
+			}
 		});
+
+		// add grouped nodes to the network's list of nodes
+		nodes.forEach((v,k) => {
+			this.nodes.set(k, {
+				id: k, 
+				symbol: v.group.length,
+				isGroup: true, 
+				group: v.group,
+				parents: v.parents 
+			});
+
+			newVm.add(k);
+		});
+		
+		// and the same with the edges
+		// edges.forEach(e => {
+		// 	this.edges
+		// })
+
+		this.vm.set(layerName, newVm);
+		
 	}
 
 	/**
@@ -186,4 +246,11 @@ export class MultiLayerNetwork{
 		// return the updated width/height svg viewBox
 		return r; //[totalCols*bb,(y+1)*bb];
 	}
+}
+
+function TSH(s){
+	for(var i=0,h=9;i<s.length;){
+		h=Math.imul(h^s.charCodeAt(i++),9**9);
+	}
+	return Math.abs(h^h>>>9);
 }

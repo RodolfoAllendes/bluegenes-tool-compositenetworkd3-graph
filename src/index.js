@@ -7,37 +7,115 @@ function main(el, service, imEntity, state, config, navigate) {
 	if (!el || !service || !imEntity || !state || !config) {
 		throw new Error('Call main with correct signature');
 	}
-	
+	// initialize the TMService	
 	let imService = new imjs.Service(service);
-	imService.fetchModel().then(model => {
-		let query = new imjs.Query({ model });
-		query.adjustPath('Gene');
-		query.select([
-			'primaryIdentifier',
-			'symbol',
-			
-			'proteins.compounds.compound.identifier',
-			'proteins.compounds.compound.name',
+	// query for initial data
+	let query = {
+		from: 'Gene',
+		select: ['primaryIdentifier', 'symbol'],
+		where: [{ path: 'id', op: 'one of', values: imEntity.Gene.value }]
+	};
+	
+	Promise.all([
+		imService.fetchModel(), 
+		imService.records(query)]
+	).then(([model,genes]) => {
+		// create the Composite Network instance
+		window.CompositeNetwork = new CompositeNetworkD3(model, genes, navigate);
 
-			'miRNAInteractions.miRNA.primaryIdentifier',
-			'miRNAInteractions.miRNA.symbol',
-
-			'interactions.gene2.primaryIdentifier',
-			'interactions.gene2.symbol'
-		]);
-		query.addConstraint({
-			path: 'id',
-			op: 'one of',
-			values: imEntity.Gene.value
+		// add compounds
+		let compoundQuery = {
+			from: 'Gene',
+			select: [
+				'primaryIdentifier',
+				'symbol',
+				'proteins.compounds.compound.identifier',
+				'proteins.compounds.compound.name'
+			],
+			where: [
+				{ path: 'id', op: 'one of',	values: imEntity.Gene.value	}
+			]
+		};
+		imService.records(compoundQuery).then(records => {
+			let data = [];
+			records.forEach(gene => {
+				gene.proteins[0].compounds.map(cpd => {
+					data.push({
+						dbid: cpd.compound.objectId,	
+						id: cpd.compound.identifier, 
+						symbol: cpd.compound.name,
+						parent: gene.objectId 
+					});
+				});
+			});
+			let grouped = data.length > 10 ? true : false;
+			window.CompositeNetwork.addData('Compound', data, 'lime', 'hexagon', grouped);
 		});
-		query.addJoin('miRNAInteractions');
-		query.addJoin('proteins');
-		query.addJoin('interactions');
+		
+		// add miRNA
+		// if(sourceNode.miRNAInteractions !== undefined){
+		// 	let miRNA = sourceNode.miRNAInteractions.map(miR => {
+		// 		return { dbid: miR.miRNA.objectId, id: miR.miRNA.primaryIdentifier, symbol: miR.miRNA.symbol };
+		// 	});
+		// 	this.network.addNodes('miRNA', miRNA, sourceNode.objectId, 'Gene');
+		// }
+		// this.network.addLayer('miRNA', 'cyan', 'triangle', false, true);
 
-		return Promise.all([model, imService.records(query)]);
-	}).then(([model, rows]) => {
-		window.CompositeNetwork = new CompositeNetworkD3(model, rows, navigate);
+		// PPI interactions
+		// if(sourceNode.interactions !== undefined){
+		// 	let ppi = sourceNode.interactions.map(g2 => {
+		// 		return { dbid: g2.gene2.objectId, id: g2.gene2.primaryIdentifier, symbol: g2.gene2.symbol };
+		// 	});
+		// 	this.network.addNodes('PPI', ppi);
+		// }
+		// this.network.addLayer('PPI', 'LightGray', 'ellipse', false, false);
+
+		// add transcription factors
+		let tfQuery = {
+			from: 'Gene',
+			select: [
+				'primaryIdentifier',
+				'symbol',
+				'transcriptionalRegulations.targetGene.primaryIdentifier',
+				'transcriptionalRegulations.targetGene.symbol',
+				'transcriptionalRegulations.dataSets.name'
+			],
+			where: [
+				{ path: 'transcriptionalRegulations.targetGene.id', op: 'one of', values: imEntity.Gene.value }
+			]
+		};
+		imService.records(tfQuery).then(records => {
+			let data = records.map(tf => {
+				return {
+					dbid: tf.objectId,
+					id: tf.primaryIdentifier,
+					symbol: tf.symbol,
+					parent: tf.transcriptionalRegulations[0].targetGene.objectId
+				};
+			}); 
+			let grouped = data.length > 10 ? true : false;
+			window.CompositeNetwork.addData('TF', data, 'LightGreen', 'square', grouped);
+		});
 	});
+
+	// 	let query = new imjs.Query({ model });
+
+	// 	query.adjustPath('Gene');
+	// 	query.select([
+	// 		'primaryIdentifier',
+	// 		'symbol',
+			
+	// 		'miRNAInteractions.miRNA.primaryIdentifier',
+	// 		'miRNAInteractions.miRNA.symbol',
+
+	// 		'interactions.gene2.primaryIdentifier',
+	// 		'interactions.gene2.symbol'
+	// 	]);
+	// 	query.addConstraint(
+	// 		{ path: 'id', op: 'one of',	values: imEntity.Gene.value	},
+	// 	);
+	// 	query.addJoin('miRNAInteractions');
+	// 	query.addJoin('interactions');
 
 	el.innerHTML = `
 		<div class="rootContainer">
@@ -57,12 +135,12 @@ function main(el, service, imEntity, state, config, navigate) {
 						</div>
 						
 						<div id="interactions-tf" class="flex-row">
-							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="Transcription" disabled></input>
+							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="TF"></input>
 							<label class="row-label">TF targets<label>
 						</div>
 						
 						<div id="interactions-ppi" class="flex-row">
-							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="Interactions" disabled></input>
+							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="Interactions"></input>
 							<label class="row-label">PPIs (HCDP)</label>
 						</div>
 						<div id="interactions-mti" class="flex-row">
@@ -72,7 +150,7 @@ function main(el, service, imEntity, state, config, navigate) {
 					</div>
 					<div id="information-div" class="flex-table">
 						<div id="nodes-groups" class="flex-row">
-							<input id="cb-nodeGroup" class="nodeCB" type="checkbox" data-layer="NodeGroup"></input>
+							<input id="cb-nodeGroup" class="nodeCB" type="checkbox" data-layer="NodeGroup" disabled></input>
 							<label class="row-label">Grouped Nodes</label>
 						</div>
 						<label>Node Information:</label>

@@ -1,6 +1,5 @@
 'use strict';
 import { MultiLayerNetwork } from './MultiLayerNetwork';
-
 const d3 = require('d3');
 
 export class CompositeNetworkD3{
@@ -9,126 +8,79 @@ export class CompositeNetworkD3{
 	 * constructor
 	 * @param {object} model 
 	 * @param {object} geneList 
+	 * @param {function} navigate
 	 */
 	constructor(model, geneList, navigate) {
 		this.model = model;
 		this.navigate = navigate;
-		// Initialize the list of nodes from the data retrieved from TargetMine
+		
+		/** process initial data data into a MultiLayer Network instance */
 		this.network = new MultiLayerNetwork();
+		this.network.addLayer('Gene', 'yellow', 'ellipse', false, true);
+		// add the source gene list to the network
+		let genes = geneList.map(g => {
+			return { 
+				dbid: g.objectId, 
+				id: g.primaryIdentifier,	
+				symbol: g.symbol, 
+				parent: undefined
+			};
+		});
+		this.network.addNodes('Gene', genes);
+		
+		/** initialize interface and interaction handlers */
+		this.initResizeHandler();
+		this.initCheckboxHandler();
 
-		// graphical properties of the nodes
-		this.r = 15;
-		this.zoom = d3.zoom().on('zoom', this.zoomed);
+		// this.zoom = d3.zoom()
+		// 	.on('zoom', this.zoomed);
 
-		// set the size and viewBox for the display area
+		this.nodeDrag = d3.drag()
+			.on('start', this.nodeDragStarted)
+			.on('drag', this.nodeDragged)
+			.on('end', this.nodeDragEnded);
+		
+		/** plot the initial version of the graph */
 		this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
 		this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
 		d3.select('#canvas_compositeNetwork')
-			.attr('viewBox', [0,0,this._width,this._height])
-			.append('rect')
-				.attr('id', 'zoomRect')
-				.attr('width', this._width)
-				.attr('height', this._height)
-				.style('fill', 'none')
-				.style('pointer-events', 'all')
-				.call(this.zoom);
+			.attr('viewBox', [0,0,this._width,this._height]);
+		// .call(this.zoom);
 		
-		// add hard-coded networks from the initial query
-		this.network.addLayer('Gene', 'yellow', 'ellipse', true, false);
-		this.network.addLayer('Compound', 'lime', 'hexagon', false, true);
-		this.network.addLayer('miRNA', 'cyan', 'triangle', false, true);
-		this.network.addLayer('PPI', 'LightGray', 'ellipse', false, false);
-
-		// add the source gene list to the network
-		let genes = geneList.map(g => {
-			return {
-				dbid: g.objectId,
-				id: g.primaryIdentifier,
-				symbol: g.symbol
-			};
-		});
-		this.network.addNodesAndEdges('Gene', genes);
-		
-		// add all the nodes and edges found starting from the initial gene list
-		geneList.forEach(sourceNode => {
-			
-			// add compound interaction - if any available 
-			if(sourceNode.proteins !== undefined ){
-				let compounds = sourceNode.proteins[0].compounds.map(cpd => {
-					return {
-						dbid: cpd.compound.objectId,
-						id: cpd.compound.identifier,
-						symbol: cpd.compound.name
-					};
-				});
-				this.network.addNodesAndEdges('Compound', compounds, sourceNode.objectId, 'Gene');
-			}
-			
-			// miRNA interactions
-			if(sourceNode.miRNAInteractions !== undefined){
-				let miRNA = sourceNode.miRNAInteractions.map(miR => {
-					return {
-						dbid: miR.miRNA.objectId,
-						id: miR.miRNA.primaryIdentifier,
-						symbol: miR.miRNA.symbol
-					};
-				});
-				this.network.addNodesAndEdges('miRNA', miRNA, sourceNode.objectId, 'Gene');
-			}
-
-			// PPI interactions
-			// if(sourceNode.interactions !== undefined){
-			// 	this.network.parseNodesAndEdges(sourceNode.objectId, sourceNode.interactions,
-			// 		'PPI',
-			// 		'objectId',
-			// 		[ ['gene2', 'primaryIdentifier'], ['gene2', 'symbol'] ]
-			// 	);
-			// }
-		});
-
-		this.network.groupNodes();
-
-		this.initFunctions();
-		
-		// initialize positions for the nodes that need to be displayed
 		this.r = this.network.setNodesPositions(
 			this._width, 
 			this._height,
 			d3.select('#cb-nodeGroup').property('checked')
 		);
 
-		// plot the initial display
 		this.plot();
+		// this.network.groupNodes();	
+	}
+
+	/**
+	 * 
+	 * @param {string} layer 
+	 * @param {object} data 
+	 * @param {string} color 
+	 * @param {string} shape 
+	 * @param {boolean} visible 
+	 * @param {boolean} grouped 
+	 */
+	addData(layer, data, color, shape, grouped=true, visible=false){
+		this.network.addLayer(layer, color, shape, grouped, visible);
+		this.network.addNodes(layer, data);
+		if(grouped){
+			this.network.groupNodesByLayer(layer);
+		}
+			
+		if(visible)
+			console('shold replot?');
 	}
 
 	/**
 	 * 
 	 */
-	initFunctions(){
-		// replot the graph if more (or less) window space is available for the svg
-		window.addEventListener('resize', () => {
-			this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
-			this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
-			this.r = this.network.setNodesPositions(
-				this._width, 
-				this._height,
-				d3.select('#cb-nodeGroup').property('checked')
-			);
-			
-			d3.select('#canvas_compositeNetwork')
-				.transition()
-				.duration(1000)
-				.attr('viewBox', [0, 0, this._width, this._height]);
-				
-			d3.select('#zoomRect')
-				.attr('width', this._width)
-				.attr('height', this._height)
-				.call(this.zoom.transform, d3.zoomIdentity)
-				.call(this.zoom);
-			
-			this.plot();
-		});
-
+	initCheckboxHandler(){
 		let self = this;
 		d3.selectAll('#rightColumn_compositeNetwork input.displayCB')
 			.on('change', function(){ 
@@ -142,29 +94,68 @@ export class CompositeNetworkD3{
 					self._height, 
 					d3.select('#cb-nodeGroup').property('checked')
 				);
-				d3.select('#zoomRect')
-					.call(self.zoom.transform, d3.zoomIdentity)
-					.call(self.zoom);
+				// d3.select('#canvas_compositeNetwork')
+				// 	.call(self.zoom.transform, d3.zoomIdentity)
+				// 	.call(self.zoom);
 				self.plot();
 			});
 
-		d3.selectAll('#rightColumn_compositeNetwork input.nodeCB')
-			.on('change', function(){ 
-				self.r = self.network.setNodesPositions(self._width, self._height, this.checked);
-				d3.select('#zoomRect')
-					.call(self.zoom.transform, d3.zoomIdentity)
-					.call(self.zoom);
-				self.plot();
-			});
-
+		// d3.selectAll('#rightColumn_compositeNetwork input.nodeCB')
+		// 	.on('change', function(){ 
+		// 		self.r = self.network.setNodesPositions(self._width, self._height, this.checked);
+		// 		d3.select('#canvas_compositeNetowrk')
+		// 			.call(self.zoom.transform, d3.zoomIdentity)
+		// 			.call(self.zoom);
+		// 		self.plot();
+		// 	});
 	}
+
+	/**
+	 * 
+	 */
+	initResizeHandler(){
+		window.addEventListener('resize', () => {
+			// replot the graph if more (or less) window space is available for the svg
+			this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
+			this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
+			this.r = this.network.setNodesPositions(
+				this._width, 
+				this._height,
+				d3.select('#cb-nodeGroup').property('checked')
+			);
+
+			d3.select('#canvas_compositeNetwork')
+			// 	.call(this.zoom.transform, d3.zoomIdentity)
+			// 	.call(this.zoom)
+				.transition()
+				.duration(1000)
+				.attr('viewBox', [0, 0, this._width, this._height]);
+
+			this.plot();	
+		});
+	}
+
+
+
+	nodeDragStarted() {
+		d3.select(this).attr('stroke', 'black');
+	}
+
+	nodeDragged(event, d) {
+		d3.select(this).raise().attr('cx', d.x = event.x).attr('cy', d.y = event.y);
+	}
+
+	nodeDragEnded() {
+		d3.select(this).attr('stroke', null);
+	}
+
 	
 	/**
 	 * 
 	 */
 	plot(){
 		this.plotBackground('#background', this._width);
-		this.plotEdges('#edges', d3.select('#cb-nodeGroup').property('checked'));
+		// this.plotEdges('#edges', d3.select('#cb-nodeGroup').property('checked'));
 		this.plotNodes('#nodes', d3.select('#cb-nodeGroup').property('checked'));
 	}
 
@@ -282,7 +273,17 @@ export class CompositeNetworkD3{
 		// plot the nodes
 		let g = d3.select(graph).selectAll('g')
 			.data(data)
-			.join('g');
+			.join('g')
+				.on('click', function(d,i){
+					if(d.defaultPrevented) return; //dragged
+					d3.select('#nodeLayer-div label')
+						.text(i.layer);
+					d3.select('#nodeSymbol-div label')
+						.text(i.symbol);
+					// d3.select('#nodeId-div label')
+					// 	.text(i.id);
+				});
+
 			
 		g.append('circle')
 			.attr('r',this.r)
@@ -291,7 +292,7 @@ export class CompositeNetworkD3{
 			.attr('fill', d => d.color)
 			.attr('stroke', 'black')
 			.attr('id', d => d.id);
-		// .on('click', (d,i) => {console.log(d,i);})
+		// .call(this.nodeDrag);
 
 		g.append('text')
 			.text(d => d.symbol)
@@ -300,7 +301,6 @@ export class CompositeNetworkD3{
 			.style('font-size', function(){ 
 				let size = (1.7 * self.r - 8) / this.getComputedTextLength() * 24;
 				size = size <0 ? 0 : size;
-				// console.log(size);
 				return Math.min(self.r, size)+'px'; 
 			})
 			.style('text-anchor', 'middle');
@@ -332,3 +332,5 @@ export class CompositeNetworkD3{
 			.attr('transform', t.transform);
 	}
 }
+
+
