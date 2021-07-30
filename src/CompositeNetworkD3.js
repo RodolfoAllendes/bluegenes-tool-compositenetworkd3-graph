@@ -135,14 +135,22 @@ export class CompositeNetworkD3{
 		});
 	}
 
-
-
 	nodeDragStarted() {
 		d3.select(this).attr('stroke', 'black');
 	}
 
 	nodeDragged(event, d) {
-		d3.select(this).raise().attr('cx', d.x = event.x).attr('cy', d.y = event.y);
+		d3.select(this)
+			.select('circle')
+				.raise()
+				.attr('cx', d.x = event.x)
+				.attr('cy', d.y = event.y);
+		
+		d3.select(this)
+			.select('text')
+				.raise()
+				.attr('dx', d.x = event.x)
+				.attr('dy', d.y = event.y);
 	}
 
 	nodeDragEnded() {
@@ -274,6 +282,7 @@ export class CompositeNetworkD3{
 		let g = d3.select(graph).selectAll('g')
 			.data(data)
 			.join('g')
+				.call(self.nodeDrag)
 				.on('click', function(d,i){
 					if(d.defaultPrevented) return; //dragged
 					d3.select('#nodeLayer-div label')
