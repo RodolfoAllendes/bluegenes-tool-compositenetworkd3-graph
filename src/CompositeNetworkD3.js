@@ -156,7 +156,6 @@ export class CompositeNetworkD3{
 	nodeDragEnded() {
 		d3.select(this).attr('stroke', null);
 	}
-
 	
 	/**
 	 * 

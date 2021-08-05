@@ -32,9 +32,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				'proteins.compounds.compound.identifier',
 				'proteins.compounds.compound.name'
 			],
-			where: [
-				{ path: 'id', op: 'one of',	values: imEntity.Gene.value	}
-			]
+			where: [{ path: 'id', op: 'one of',	values: imEntity.Gene.value	}]
 		};
 		imService.records(compoundQuery).then(records => {
 			let data = [];
@@ -53,13 +51,30 @@ function main(el, service, imEntity, state, config, navigate) {
 		});
 		
 		// add miRNA
-		// if(sourceNode.miRNAInteractions !== undefined){
-		// 	let miRNA = sourceNode.miRNAInteractions.map(miR => {
-		// 		return { dbid: miR.miRNA.objectId, id: miR.miRNA.primaryIdentifier, symbol: miR.miRNA.symbol };
-		// 	});
-		// 	this.network.addNodes('miRNA', miRNA, sourceNode.objectId, 'Gene');
-		// }
-		// this.network.addLayer('miRNA', 'cyan', 'triangle', false, true);
+		let mirnaQuery = {
+			from: 'Gene',
+			select: [
+				'primaryIdentifier',
+				'symbol',
+				'miRNAInteractions.miRNA.primaryIdentifier',
+				'miRNAInteractions.miRNA.symbol'
+			],
+			where: [{ path:'id', op: 'one of', values: imEntity.Gene.value }]
+		};
+		imService.records(mirnaQuery).then(records => {
+			let data = [];
+			records.forEach(gene => {
+				gene.miRNAInteractions.map(mirna => {
+					data.push({
+						dbid: mirna.miRNA.objectId,
+						id: mirna.miRNA.primaryIdentifier, 
+						symbol: mirna.miRNA.symbol,
+						parent: gene.objectId
+					});
+				});
+			});
+			let grouped = data.length > 10 ? true : false;
+			window.CompositeNetwork.addData('miRNA', data, 'cyan', 'triangle',grouped, false);
 
 		// PPI interactions
 		// if(sourceNode.interactions !== undefined){
@@ -69,6 +84,7 @@ function main(el, service, imEntity, state, config, navigate) {
 		// 	this.network.addNodes('PPI', ppi);
 		// }
 		// this.network.addLayer('PPI', 'LightGray', 'ellipse', false, false);
+		});
 
 		// add transcription factors
 		let tfQuery = {
@@ -105,8 +121,6 @@ function main(el, service, imEntity, state, config, navigate) {
 	// 		'primaryIdentifier',
 	// 		'symbol',
 			
-	// 		'miRNAInteractions.miRNA.primaryIdentifier',
-	// 		'miRNAInteractions.miRNA.symbol',
 
 	// 		'interactions.gene2.primaryIdentifier',
 	// 		'interactions.gene2.symbol'
