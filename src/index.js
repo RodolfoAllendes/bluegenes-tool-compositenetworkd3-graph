@@ -75,15 +75,63 @@ function main(el, service, imEntity, state, config, navigate) {
 			});
 			let grouped = data.length > 10 ? true : false;
 			window.CompositeNetwork.addData('miRNA', data, 'cyan', 'triangle',grouped, false);
-
-		// PPI interactions
-		// if(sourceNode.interactions !== undefined){
-		// 	let ppi = sourceNode.interactions.map(g2 => {
-		// 		return { dbid: g2.gene2.objectId, id: g2.gene2.primaryIdentifier, symbol: g2.gene2.symbol };
-		// 	});
-		// 	this.network.addNodes('PPI', ppi);
-		// }
-		// this.network.addLayer('PPI', 'LightGray', 'ellipse', false, false);
+		});
+		// console.log(imEntity.Gene.value);
+		// PPI interactions - This is done in two steps...
+		// first we query the PPI associated to the original nodes
+		let ppiQuery = {
+			from: 'Gene',
+			select: [
+				'primaryIdentifier',
+				'symbol',
+				'interactions.gene2.primaryIdentifier',
+				'interactions.gene2.symbol'
+			],
+			where: [
+				{ path: 'interactions.confidences.type', op: '=', value: 'HCDP' },
+				{ path: 'id', op: 'one of', values: imEntity.Gene.value }
+			]
+		};
+		imService.records(ppiQuery).then(records => {
+			// create a set with the id's of the results
+			let validNodes = new Set();
+			records.forEach(gene => {
+				validNodes.add(gene.objectId);
+				gene.interactions.forEach(gene2 => validNodes.add(gene2.gene2.objectId));
+			});
+			// console.log(records);
+			// console.log([...validNodes]);
+		
+			// secondly we query intra-set HCDP PPIs
+			let intraPPIQuery = {
+				from: 'Gene',
+				select: [
+					'primaryIdentifier',
+					'symbol',
+					'interactions.gene2.primaryIdentifier',
+					'interactions.gene2.symbol'
+				],
+				where: [
+					{ path: 'interactions.confidences.type', op: '=', value: 'HCDP' },
+					{ path: 'id', op: 'one of', values: [...validNodes] },
+					{ path: 'interactions.gene2.id', op: 'one of', values: [...validNodes] }
+				]
+			};
+			imService.records(intraPPIQuery).then(allPPIs => {
+				// console.log('intrappi', allPPIs);
+				let data = [];
+				allPPIs.forEach(gene => {
+					gene.interactions.map(ppi => {
+						data.push({
+							dbid: ppi.gene2.objectId,
+							id: ppi.gene2.primaryIdentifier,
+							symbol: ppi.gene2.symbol,
+							parent: gene.objectId
+						});
+					});
+				});
+				window.CompositeNetwork.addData('PPI', data, 'gray', 'ellipse', false, false);
+			});
 		});
 
 		// add transcription factors

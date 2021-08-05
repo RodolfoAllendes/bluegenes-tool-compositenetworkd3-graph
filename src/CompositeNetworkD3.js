@@ -67,6 +67,7 @@ export class CompositeNetworkD3{
 	 * @param {boolean} grouped 
 	 */
 	addData(layer, data, color, shape, grouped=true, visible=false){
+		// console.log('adding layer', layer, data);
 		this.network.addLayer(layer, color, shape, visible);
 		this.network.addNodes(layer, data);
 		
