@@ -8,9 +8,9 @@ export class MultiLayerNetwork{
 		this.vm = new Map();
 		this.edges = new Map();
 
-		this.groupedLayers = new Set();
-		this.groupedNodes = new Map();
-		this.groupedEdges = new Map();
+		// this.groupedLayers = new Set();
+		// this.groupedNodes = new Map();
+		// this.groupedEdges = new Map();
 
 		this.displayLayers = new Set();
 	}
@@ -169,33 +169,33 @@ export class MultiLayerNetwork{
 	 * bottom the different layers of the network
 	 * @param {int} width the width of the drawing panel in pixels
 	 * @param {int} height the height of the drawin panel in pixels
-	 * @param {int} bb the bounding box size of a node
-	 * @param {boolean} groups display groups of nodes
-	 * @returns the pair [width, height] for the viewbox of the svg container
+	 * @returns the radius (r) of the circle used to represent a node
 	 */
-	setNodesPositions(width, height, groups){
+	setNodesPositions(width, height){
 		// calculate the number of nodes that need to be displayed
 		let n = [...this.displayLayers.keys()].map(dl => {
-			if(groups && this.groupedLayers.has(dl))
-				return this.groupedNodes.get(dl).size;
 			return this.vm.get(dl).size;
 		});
 		
 		// based on the number of nodes to be displayed on each layer, decide the 
 		// number of rows and columns the graph should have
 		let layerRows = Array(this.displayLayers.size).fill(1);
-		let totalRows = layerRows.reduce((a,b) => a+b, 0);
-		let totalCols = Math.ceil(totalRows*width/height);
-		let fits = layerRows.map((r,i) => r*totalCols >= n[i]);
+		// minimum number of rows is one per display layer
+		let totalRows = layerRows.reduce((a,b) => a+b, 0); 
+		// minimum number of cols is proportional to the aspect ratio
+		let totalCols = Math.ceil(totalRows*width/height); 
+		// do the number of nodes of layer i fit in the allocated rows*cols?
+		let fits = layerRows.map((r,i) => r*totalCols >= n[i]); 
+		// if not... increase the number of rows or cols
 		while (fits.includes(false)){
-			layerRows = layerRows.map((r,i) => r*totalCols < n[i]? r+1 : r);// 		return acc && cur*cols >= n[i]
+			layerRows = layerRows.map((r,i) => r*totalCols < n[i]? r+1 : r);
 			totalRows = layerRows.reduce((a,b) => a+b, 0);
 			totalCols = Math.ceil(totalRows*width/height);
 			fits = layerRows.map((r,i) => r*totalCols >= n[i]);
 		}
 		layerRows = layerRows.map((r,i)=> Math.ceil(n[i]/totalCols));
 		
-		// // the row index for the current node (the actual shifting in position
+		// the row index for the current node (the actual shifting in position
 		// will be handled based on this index)
 		let dy = height/totalRows; 
 		let dx = width/totalCols;
@@ -210,26 +210,13 @@ export class MultiLayerNetwork{
 			let j = 1;
 			let ymin = y*dy;
 
-			// get a list of nodes or grouped nodes
-			let layer = groups && this.groupedLayers.has(dl) ? 
-				this.groupedNodes.get(dl) :
-				this.vm.get(dl);
-			
 			// and position the nodes one by one, moving away from the center column
 			// and down as the columns get filled
-			layer.forEach((node) => {
-				let px = (dx*(x%totalCols)) + (dx/2);
-				let py = (dy*y) + (dy/2);
-				if(groups && this.groupedLayers.has(dl)){
-					node['x'] = px;
-					node['y'] = py;//(dy*(y+1))-(bb/2);
-				}
-				else{
-					let n = this.nodes.get(node);
-					n['x'] = px;
-					n['y'] = py;//(dy*(y+1))-(dy/2);
-				}
-					
+			this.vm.get(dl).forEach((node) => {
+				let n = this.nodes.get(node);
+				n['x'] = (dx*(x%totalCols)) + (dx/2);
+				n['y'] = (dy*y) + (dy/2);
+				
 				x += ((-1)**j)*j;
 				j += 1;
 				if(x >= totalCols || x < 0){
@@ -239,12 +226,11 @@ export class MultiLayerNetwork{
 				}
 			});
 			// add 'layer bounding box' based on the nodes coordinates
-			// let layerDims = { ymin: y*bb };layerDims['ymax'] = (y+1) * bb;
 			y += 1;
 			this.layers.get(dl)['dims'] = { ymin, ymax: y*dy };
 		},this);
 		// return the updated width/height svg viewBox
-		return r; //[totalCols*bb,(y+1)*bb];
+		return [r, width, totalRows*dy];
 	}
 }
 

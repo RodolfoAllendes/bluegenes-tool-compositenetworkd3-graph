@@ -32,8 +32,12 @@ export class CompositeNetworkD3{
 		this.initResizeHandler();
 		this.initCheckboxHandler();
 
-		// this.zoom = d3.zoom()
-		// 	.on('zoom', this.zoomed);
+		this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
+		this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
+		
+		this.screenZoom = d3.zoom()
+			.extent([[0,0],[this._width, this._height]])
+			.on('zoom', this.zoomed);
 
 		this.nodeDrag = d3.drag()
 			.on('start', this.nodeDragStarted)
@@ -41,20 +45,16 @@ export class CompositeNetworkD3{
 			.on('end', this.nodeDragEnded);
 		
 		/** plot the initial version of the graph */
-		this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
-		this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
 		d3.select('#canvas_compositeNetwork')
-			.attr('viewBox', [0,0,this._width,this._height]);
-		// .call(this.zoom);
+			.attr('viewBox', [0,0,this._width,this._height])
+			.call(this.screenZoom);
 		
-		this.r = this.network.setNodesPositions(
+		[this.r, this._width, this._height] = this.network.setNodesPositions(
 			this._width, 
-			this._height,
-			d3.select('#cb-nodeGroup').property('checked')
+			this._height
 		);
 
 		this.plot();
-		// this.network.groupNodes();	
 	}
 
 	/**
@@ -72,7 +72,6 @@ export class CompositeNetworkD3{
 		if(grouped){
 			this.network.groupNodesByLayer(layer);
 		}
-			
 		if(visible)
 			console('shold replot?');
 	}
@@ -89,25 +88,15 @@ export class CompositeNetworkD3{
 				else
 					self.network.displayLayers.delete(this.dataset.layer);
 			
-				self.r = self.network.setNodesPositions(
+				[self.r, self._width, self._height] = self.network.setNodesPositions(
 					self._width, 
 					self._height, 
-					d3.select('#cb-nodeGroup').property('checked')
 				);
-				// d3.select('#canvas_compositeNetwork')
-				// 	.call(self.zoom.transform, d3.zoomIdentity)
-				// 	.call(self.zoom);
+				d3.select('#canvas_compositeNetwork')
+					.call(self.screenZoom.transform, d3.zoomIdentity)
+					.call(self.screenZoom);
 				self.plot();
 			});
-
-		// d3.selectAll('#rightColumn_compositeNetwork input.nodeCB')
-		// 	.on('change', function(){ 
-		// 		self.r = self.network.setNodesPositions(self._width, self._height, this.checked);
-		// 		d3.select('#canvas_compositeNetowrk')
-		// 			.call(self.zoom.transform, d3.zoomIdentity)
-		// 			.call(self.zoom);
-		// 		self.plot();
-		// 	});
 	}
 
 	/**
@@ -121,8 +110,7 @@ export class CompositeNetworkD3{
 			this.r = this.network.setNodesPositions(
 				this._width, 
 				this._height,
-				d3.select('#cb-nodeGroup').property('checked')
-			);
+			)[0];
 
 			d3.select('#canvas_compositeNetwork')
 			// 	.call(this.zoom.transform, d3.zoomIdentity)
@@ -139,18 +127,33 @@ export class CompositeNetworkD3{
 		d3.select(this).attr('stroke', 'black');
 	}
 
-	nodeDragged(event, d) {
-		d3.select(this)
-			.select('circle')
-				.raise()
-				.attr('cx', d.x = event.x)
-				.attr('cy', d.y = event.y);
-		
-		d3.select(this)
-			.select('text')
-				.raise()
-				.attr('dx', d.x = event.x)
-				.attr('dy', d.y = event.y);
+	nodeDragged(event) {
+		let g = d3.select(this)
+			.raise();
+
+		g.select('circle')
+			.attr('cx', d => {
+				if(event.x < d.r) return d.r;
+				if(event.x > d.xmax-d.r) return d.xmax-d.r;
+				return event.x;
+			})
+			.attr('cy', d => {
+				if(event.y < d.ymin+d.r) return d.ymin+d.r;
+				if(event.y > d.ymax-d.r) return d.ymax-d.r;
+				return event.y;
+			});
+			
+		g.select('text')
+			.attr('dx', d => {
+				if(event.x < d.r) return d.r;
+				if(event.x > d.xmax-d.r) return d.xmax-d.r;
+				return event.x;
+			})
+			.attr('dy', d => {
+				if(event.y < d.ymin+d.r) return d.ymin+d.r;
+				if(event.y > d.ymax-d.r) return d.ymax-d.r;
+				return event.y;
+			});
 	}
 
 	nodeDragEnded() {
@@ -164,7 +167,7 @@ export class CompositeNetworkD3{
 	plot(){
 		this.plotBackground('#background', this._width);
 		// this.plotEdges('#edges', d3.select('#cb-nodeGroup').property('checked'));
-		this.plotNodes('#nodes', d3.select('#cb-nodeGroup').property('checked'));
+		this.plotNodes('#nodes');
 	}
 
 	/**
@@ -234,49 +237,38 @@ export class CompositeNetworkD3{
 				.attr('y1', d => d.source[1])
 				.attr('y2', d => d.target[1])
 				.attr('stroke', 'lightGray');
-		// .style('opacity', 0.2);
 	}
 
 	/**
 	 * Plot the nodes in the graph
 	 * @param {} graph
-	 * @param {boolean} groups display groups of nodes
 	 */
-	plotNodes(graph, groups){
+	plotNodes(graph){
 		let self = this;
 		let data = [];
 		this.network.displayLayers.forEach(dl=>{
 			// fetch the layer's color 
 			let color = this.network.layers.get(dl).color;
+			let dims = this.network.layers.get(dl).dims;
 			// and the position of each node
-			if(groups && this.network.groupedLayers.has(dl)){
-				[...this.network.groupedNodes.get(dl).values()].map(node =>{
-					data.push({
-						layer:dl,
-						symbol: node.group.length,
-						x: node.x,
-						y: node.y,
-						id: node,
-						color
-					});
+			[...this.network.vm.get(dl).values()].map(node =>{
+				let n = this.network.nodes.get(node);
+				data.push({
+					layer: dl,
+					r: this.r,
+					ymin:dims.ymin,
+					ymax:dims.ymax,
+					xmax: this._width,
+					symbol: n.symbol, 
+					x: n.x, 
+					y: n.y, 
+					id: node, 
+					color 
 				});
-			}
-			else{
-				[...this.network.vm.get(dl).values()].map(node =>{
-					let n = this.network.nodes.get(node);
-					data.push({
-						layer: dl,
-						symbol: n.symbol, 
-						x: n.x, 
-						y: n.y, 
-						id: node, 
-						color 
-					});
-				});
-			}
+			});
 		},this);
 		
-
+		// clear previous nodes
 		d3.select(graph).selectAll('g').remove();
 		// plot the nodes
 		let g = d3.select(graph).selectAll('g')
@@ -284,16 +276,13 @@ export class CompositeNetworkD3{
 			.join('g')
 				.call(self.nodeDrag)
 				.on('click', function(d,i){
-					if(d.defaultPrevented) return; //dragged
 					d3.select('#nodeLayer-div label')
 						.text(i.layer);
 					d3.select('#nodeSymbol-div label')
 						.text(i.symbol);
-					// d3.select('#nodeId-div label')
-					// 	.text(i.id);
+					if(d.defaultPrevented) return;
 				});
 
-			
 		g.append('circle')
 			.attr('r',this.r)
 			.attr('cx', d => d.x)
@@ -301,12 +290,11 @@ export class CompositeNetworkD3{
 			.attr('fill', d => d.color)
 			.attr('stroke', 'black')
 			.attr('id', d => d.id);
-		// .call(this.nodeDrag);
 
 		g.append('text')
 			.text(d => d.symbol)
 			.attr('dx', d => d.x)
-			.attr('dy', d => d.y)//'.35em')
+			.attr('dy', d => d.y)
 			.style('font-size', function(){ 
 				let size = (1.7 * self.r - 8) / this.getComputedTextLength() * 24;
 				size = size <0 ? 0 : size;
@@ -326,19 +314,26 @@ export class CompositeNetworkD3{
 		// });
 	}
 
+	updateCanvasSize(){
+
+	}
+
 	/**
 	 * 
 	 * @param {zoomEvent} t The zoom event as defined in the D3 library
 	 */
 	zoomed(t){
-		d3.selectAll('#background rect')
+		d3.select('g#cursor')
 			.attr('transform', t.transform);
-		d3.selectAll('#edges line')
-			.attr('transform', t.transform);
-		d3.selectAll('#nodes circle')
-			.attr('transform', t.transform);
-		d3.selectAll('#nodes text')
-			.attr('transform', t.transform);
+
+		// d3.selectAll('#background rect')
+		// 	.attr('transform', t.transform);
+		// d3.selectAll('#edges line')
+		// 	.attr('transform', t.transform);
+		// d3.selectAll('#nodes circle')
+		// 	.attr('transform', t.transform);
+		// d3.selectAll('#nodes text')
+		// 	.attr('transform', t.transform);
 	}
 }
 

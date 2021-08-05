@@ -121,9 +121,11 @@ function main(el, service, imEntity, state, config, navigate) {
 		<div class="rootContainer">
 			<div id="compositeNetworkD3-graph" class="targetmineGraphDisplayer">
 				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG">
-						<g id="background"></g>
-						<g id="edges"></g>
-						<g id="nodes"></g>
+						<g id="cursor">
+							<g id="background"></g>
+							<g id="edges"></g>
+							<g id="nodes" cursor="grab"></g>
+						</g>
 				</svg>
 			
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
@@ -149,10 +151,6 @@ function main(el, service, imEntity, state, config, navigate) {
 						</div>
 					</div>
 					<div id="information-div" class="flex-table">
-						<div id="nodes-groups" class="flex-row">
-							<input id="cb-nodeGroup" class="nodeCB" type="checkbox" data-layer="NodeGroup" disabled></input>
-							<label class="row-label">Grouped Nodes</label>
-						</div>
 						<label>Node Information:</label>
 						<div id="nodeLayer-div" class="flex-row">
 							<label class="row-label">Click on a node to see details...</label>
