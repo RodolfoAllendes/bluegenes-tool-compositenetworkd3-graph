@@ -8,31 +8,27 @@ export class MultiLayerNetwork{
 		this.vm = new Map();
 		this.edges = new Map();
 
-		// this.groupedLayers = new Set();
-		// this.groupedNodes = new Map();
-		// this.groupedEdges = new Map();
-
 		this.displayLayers = new Set();
 	}
 
 	/**
+	 * Add the details for a new Layer to the network
 	 * 
 	 * @param {string} name 
 	 * @param {string} color 
 	 * @param {string} shape 
 	 * @param {boolean} visible 
-	 * @param {boolean} grouped
 	 */
-	addLayer(name, color, shape, grouped=true, visible=false){
+	addLayer(name, color, shape, visible=false){
 		this.layers.set(name, {color, shape});
 		if(visible) this.displayLayers.add(name);
-		if(grouped) this.groupedLayers.add(name);
 	}
 
 	/**
+	 * Add nodes to a given Layer of the network
 	 * 
-	 * @param {*} layer 
-	 * @param {*} data 
+	 * @param {String} layer 
+	 * @param {Array} data 
 	 */
 	addNodes(layer, data){
 		// retrieve current vm for the layer
@@ -57,10 +53,17 @@ export class MultiLayerNetwork{
 			vm.add(ele.dbid);
 		}, this);
 		// update the vm element for the layer
-		this.vm.set(layer, vm); 
-		
+		this.vm.set(layer, vm); 	
 	}
 
+	/**
+	 * Add edges between  a single source node from a source layer, and a series 
+	 * of target nodes belonging to a different layer
+	 * @param {String} layer 
+	 * @param {Array} data 
+	 * @param {*} sourceNode 
+	 * @param {*} sourceLayer 
+	 */
 	addEdges(layer, data, sourceNode=undefined, sourceLayer=undefined){
 		// retrieve current vm for the layer
 		let vm = this.vm.get(layer) || new Set();
@@ -93,8 +96,35 @@ export class MultiLayerNetwork{
 		}, this);
 		this.vm.set(layer, vm); 
 		this.edges.set(layer, edges);
-	
+	}
 
+	/**
+	 * 
+	 */
+	getDisplayNodes(r){
+		let data = [];
+		this.displayLayers.forEach(dl=>{
+			// fetch the layer's color 
+			let color = this.layers.get(dl).color;
+			let dims = this.layers.get(dl).dims;
+			// and the position of each node
+			[...this.vm.get(dl).values()].map(node =>{
+				let n = this.nodes.get(node);
+				data.push({
+					layer: dl,
+					r,
+					ymin:dims.ymin,
+					ymax:dims.ymax,
+					xmax: dims.xmax,
+					symbol: n.symbol, 
+					x: n.x, 
+					y: n.y, 
+					id: node, 
+					color 
+				});
+			});
+		},this);
+		return data;
 	}
 
 	/**
@@ -160,7 +190,6 @@ export class MultiLayerNetwork{
 		// })
 
 		this.vm.set(layerName, newVm);
-		
 	}
 
 	/**
@@ -227,7 +256,7 @@ export class MultiLayerNetwork{
 			});
 			// add 'layer bounding box' based on the nodes coordinates
 			y += 1;
-			this.layers.get(dl)['dims'] = { ymin, ymax: y*dy };
+			this.layers.get(dl)['dims'] = { ymin, ymax: y*dy, xmax: width };
 		},this);
 		// return the updated width/height svg viewBox
 		return [r, width, totalRows*dy];

@@ -16,7 +16,7 @@ export class CompositeNetworkD3{
 		
 		/** process initial data data into a MultiLayer Network instance */
 		this.network = new MultiLayerNetwork();
-		this.network.addLayer('Gene', 'yellow', 'ellipse', false, true);
+		this.network.addLayer('Gene', 'yellow', 'ellipse', true);
 		// add the source gene list to the network
 		let genes = geneList.map(g => {
 			return { 
@@ -67,13 +67,14 @@ export class CompositeNetworkD3{
 	 * @param {boolean} grouped 
 	 */
 	addData(layer, data, color, shape, grouped=true, visible=false){
-		this.network.addLayer(layer, color, shape, grouped, visible);
+		this.network.addLayer(layer, color, shape, visible);
 		this.network.addNodes(layer, data);
+		
 		if(grouped){
 			this.network.groupNodesByLayer(layer);
 		}
 		if(visible)
-			console('shold replot?');
+			console('should replot?');
 	}
 
 	/**
@@ -113,8 +114,8 @@ export class CompositeNetworkD3{
 			)[0];
 
 			d3.select('#canvas_compositeNetwork')
-			// 	.call(this.zoom.transform, d3.zoomIdentity)
-			// 	.call(this.zoom)
+				.call(this.screenZoom.transform, d3.zoomIdentity)
+				.call(this.screenZoom)
 				.transition()
 				.duration(1000)
 				.attr('viewBox', [0, 0, this._width, this._height]);
@@ -123,39 +124,35 @@ export class CompositeNetworkD3{
 		});
 	}
 
+	/**
+	 * 
+	 */
 	nodeDragStarted() {
 		d3.select(this).attr('stroke', 'black');
 	}
 
-	nodeDragged(event) {
+	/**
+	 * 
+	 * @param {*} event 
+	 */
+	nodeDragged(event,d) {
+		let x = event.x < d.r ? d.r : event.x > d.xmax-d.r ? d.xmax-d.r : event.x;
+		let y = event.y < d.ymin+d.r ? d.ymin+d.r : event.y > d.ymax-d.r ? d.ymax-d.r : event.y;
 		let g = d3.select(this)
 			.raise();
-
+		
 		g.select('circle')
-			.attr('cx', d => {
-				if(event.x < d.r) return d.r;
-				if(event.x > d.xmax-d.r) return d.xmax-d.r;
-				return event.x;
-			})
-			.attr('cy', d => {
-				if(event.y < d.ymin+d.r) return d.ymin+d.r;
-				if(event.y > d.ymax-d.r) return d.ymax-d.r;
-				return event.y;
-			});
+			.attr('cx', d.x = x)
+			.attr('cy', d.y = y);
 			
 		g.select('text')
-			.attr('dx', d => {
-				if(event.x < d.r) return d.r;
-				if(event.x > d.xmax-d.r) return d.xmax-d.r;
-				return event.x;
-			})
-			.attr('dy', d => {
-				if(event.y < d.ymin+d.r) return d.ymin+d.r;
-				if(event.y > d.ymax-d.r) return d.ymax-d.r;
-				return event.y;
-			});
+			.attr('dx', d.dx = x)
+			.attr('dy', d.dy = y);
 	}
 
+	/**
+	 * 
+	 */
 	nodeDragEnded() {
 		d3.select(this).attr('stroke', null);
 	}
@@ -245,28 +242,7 @@ export class CompositeNetworkD3{
 	 */
 	plotNodes(graph){
 		let self = this;
-		let data = [];
-		this.network.displayLayers.forEach(dl=>{
-			// fetch the layer's color 
-			let color = this.network.layers.get(dl).color;
-			let dims = this.network.layers.get(dl).dims;
-			// and the position of each node
-			[...this.network.vm.get(dl).values()].map(node =>{
-				let n = this.network.nodes.get(node);
-				data.push({
-					layer: dl,
-					r: this.r,
-					ymin:dims.ymin,
-					ymax:dims.ymax,
-					xmax: this._width,
-					symbol: n.symbol, 
-					x: n.x, 
-					y: n.y, 
-					id: node, 
-					color 
-				});
-			});
-		},this);
+		let data = this.network.getDisplayNodes(this.r);
 		
 		// clear previous nodes
 		d3.select(graph).selectAll('g').remove();
@@ -290,7 +266,7 @@ export class CompositeNetworkD3{
 			.attr('fill', d => d.color)
 			.attr('stroke', 'black')
 			.attr('id', d => d.id);
-
+		
 		g.append('text')
 			.text(d => d.symbol)
 			.attr('dx', d => d.x)
@@ -303,6 +279,10 @@ export class CompositeNetworkD3{
 			.style('text-anchor', 'middle');
 	}
 
+	/**
+	 * 
+	 * @param {*} target 
+	 */
 	setInfo(target){
 		// target.layer
 		d3.select('#nodeSymbol-div > label')
@@ -314,10 +294,6 @@ export class CompositeNetworkD3{
 		// });
 	}
 
-	updateCanvasSize(){
-
-	}
-
 	/**
 	 * 
 	 * @param {zoomEvent} t The zoom event as defined in the D3 library
@@ -325,15 +301,6 @@ export class CompositeNetworkD3{
 	zoomed(t){
 		d3.select('g#cursor')
 			.attr('transform', t.transform);
-
-		// d3.selectAll('#background rect')
-		// 	.attr('transform', t.transform);
-		// d3.selectAll('#edges line')
-		// 	.attr('transform', t.transform);
-		// d3.selectAll('#nodes circle')
-		// 	.attr('transform', t.transform);
-		// d3.selectAll('#nodes text')
-		// 	.attr('transform', t.transform);
 	}
 }
 
