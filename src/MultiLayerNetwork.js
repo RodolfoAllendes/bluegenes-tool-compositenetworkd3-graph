@@ -146,21 +146,26 @@ export class MultiLayerNetwork{
 		// we will generate a series of new 'grouped' nodes and edges
 		let nodes = new Map();
 		// let edges = [];
-		let newVm = new Set();
+		let newVm = new Map();
 		
-		layer.forEach(nid => {
+		[...layer.entries()].forEach(([nid,pos]) => {
 			// retrieve the node and remove it from the list of nodes
+			// console.log(nid);
 			const node = this.nodes.get(nid);
 			this.nodes.delete(nid);
 			// generate an id for the new node, based on its parents and the layer
 			// to witch it belongs
-			let p = parseInt(node.parents.reduce((c,a) => a+c, ''));
+			let p = parseInt(node.linkedTo.reduce((c,a) => a+c, ''));
 			p += TSH(layerName);
 			p = -Math.abs(p);
 			
 			if(!nodes.has(p)){
 				// add new node
-				nodes.set(p, { 'group': [node], 'parents': node.parents });
+				nodes.set(p, { 
+					'group': [node], 
+					'linkedTo': node.linkedTo,
+					'pos': pos 
+				});
 				// add edges
 				// node.parents.forEach(d => {
 				// 	this.edges.delete(d+'-'+nid);
@@ -185,10 +190,10 @@ export class MultiLayerNetwork{
 				symbol: v.group.length,
 				isGroup: true, 
 				group: v.group,
-				parents: v.parents 
+				linkedTo: v.linkedTo
 			});
 
-			newVm.add(k);
+			newVm.set(k, v.pos);
 		});
 		
 		// and the same with the edges
