@@ -23,7 +23,7 @@ export class CompositeNetworkD3{
 				dbid: g.objectId, 
 				id: g.primaryIdentifier,	
 				symbol: g.symbol, 
-				parent: undefined
+				linkedTo: undefined
 			};
 		});
 		this.network.addNodes('Gene', genes);
@@ -58,7 +58,7 @@ export class CompositeNetworkD3{
 	}
 
 	/**
-	 * 
+	 * Add nodes to the network
 	 * @param {string} layer 
 	 * @param {object} data 
 	 * @param {string} color 
@@ -67,10 +67,8 @@ export class CompositeNetworkD3{
 	 * @param {boolean} grouped 
 	 */
 	addData(layer, data, color, shape, grouped=true, visible=false){
-		// console.log('adding layer', layer, data);
 		this.network.addLayer(layer, color, shape, visible);
 		this.network.addNodes(layer, data);
-		
 		if(grouped){
 			this.network.groupNodesByLayer(layer);
 		}

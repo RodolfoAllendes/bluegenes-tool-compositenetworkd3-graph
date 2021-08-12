@@ -32,7 +32,7 @@ export class MultiLayerNetwork{
 	 */
 	addNodes(layer, data){
 		// retrieve current vm for the layer
-		let vm = this.vm.get(layer) || new Set();
+		let vm = this.vm.get(layer) || new Map();
 		data.forEach(ele => {
 			// add the node to the list (if required)
 			if(!this.nodes.has(ele.dbid)){
@@ -40,20 +40,26 @@ export class MultiLayerNetwork{
 					id: ele.id, 
 					symbol: ele.symbol,
 					isGroup: false, 
-					...(ele.parent !== undefined && { parents: [ele.parent] } )
+					...(ele.linkedTo !== undefined && { linkedTo: [ele.linkedTo] } )
 				};
 				this.nodes.set(ele.dbid, n);
 			}
 			else{ // if node is already in the network only update its parents
-				if(ele.parent !== undefined){
-					this.nodes.get(ele.dbid).parents.push(ele.parent);
+				if(ele.linkedTo !== undefined){
+					let n = this.nodes.get(ele.dbid);
+					// console.log(n, ele.linkedTo);
+					if( n.linkedTo === undefined )
+						n.linkedTo = [ele.linkedTo];
+					else
+						n.linkedTo.push(ele.linkedTo);
+					// console.log(n.linkedTo);
 				}
 			}
 			// add reference between layer and node
-			vm.add(ele.dbid);
+			vm.set(ele.dbid,{});
 		}, this);
 		// update the vm element for the layer
-		this.vm.set(layer, vm); 	
+		this.vm.set(layer, vm);
 	}
 
 	/**
@@ -108,17 +114,18 @@ export class MultiLayerNetwork{
 			let color = this.layers.get(dl).color;
 			let dims = this.layers.get(dl).dims;
 			// and the position of each node
-			[...this.vm.get(dl).values()].map(node =>{
+			[...this.vm.get(dl).entries()].map( ([node,pos]) =>{
 				let n = this.nodes.get(node);
+				
 				data.push({
 					layer: dl,
 					r,
-					ymin:dims.ymin,
-					ymax:dims.ymax,
+					ymin: dims.ymin,
+					ymax: dims.ymax,
 					xmax: dims.xmax,
 					symbol: n.symbol, 
-					x: n.x, 
-					y: n.y, 
+					x: pos.x, 
+					y: pos.y, 
 					id: node, 
 					color 
 				});
@@ -242,9 +249,9 @@ export class MultiLayerNetwork{
 			// and position the nodes one by one, moving away from the center column
 			// and down as the columns get filled
 			this.vm.get(dl).forEach((node) => {
-				let n = this.nodes.get(node);
-				n['x'] = (dx*(x%totalCols)) + (dx/2);
-				n['y'] = (dy*y) + (dy/2);
+				// let n = this.nodes.get(node);
+				node['x'] = (dx*(x%totalCols)) + (dx/2);
+				node['y'] = (dy*y) + (dy/2);
 				
 				x += ((-1)**j)*j;
 				j += 1;

@@ -24,59 +24,58 @@ function main(el, service, imEntity, state, config, navigate) {
 		window.CompositeNetwork = new CompositeNetworkD3(model, genes, navigate);
 
 		// add compounds
-		let compoundQuery = {
-			from: 'Gene',
-			select: [
-				'primaryIdentifier',
-				'symbol',
-				'proteins.compounds.compound.identifier',
-				'proteins.compounds.compound.name'
-			],
-			where: [{ path: 'id', op: 'one of',	values: imEntity.Gene.value	}]
-		};
-		imService.records(compoundQuery).then(records => {
-			let data = [];
-			records.forEach(gene => {
-				gene.proteins[0].compounds.map(cpd => {
-					data.push({
-						dbid: cpd.compound.objectId,	
-						id: cpd.compound.identifier, 
-						symbol: cpd.compound.name,
-						parent: gene.objectId 
-					});
-				});
-			});
-			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('Compound', data, 'lime', 'hexagon', grouped);
-		});
+		// let compoundQuery = {
+		// 	from: 'Gene',
+		// 	select: [
+		// 		'primaryIdentifier',
+		// 		'symbol',
+		// 		'proteins.compounds.compound.identifier',
+		// 		'proteins.compounds.compound.name'
+		// 	],
+		// 	where: [{ path: 'id', op: 'one of',	values: imEntity.Gene.value	}]
+		// };
+		// imService.records(compoundQuery).then(records => {
+		// 	let data = [];
+		// 	records.forEach(gene => {
+		// 		gene.proteins[0].compounds.map(cpd => {
+		// 			data.push({
+		// 				dbid: cpd.compound.objectId,	
+		// 				id: cpd.compound.identifier, 
+		// 				symbol: cpd.compound.name,
+		// 				parent: gene.objectId 
+		// 			});
+		// 		});
+		// 	});
+		// 	let grouped = data.length > 10 ? true : false;
+		// 	window.CompositeNetwork.addData('Compound', data, 'lime', 'hexagon', grouped);
+		// });
 		
-		// add miRNA
-		let mirnaQuery = {
-			from: 'Gene',
-			select: [
-				'primaryIdentifier',
-				'symbol',
-				'miRNAInteractions.miRNA.primaryIdentifier',
-				'miRNAInteractions.miRNA.symbol'
-			],
-			where: [{ path:'id', op: 'one of', values: imEntity.Gene.value }]
-		};
-		imService.records(mirnaQuery).then(records => {
-			let data = [];
-			records.forEach(gene => {
-				gene.miRNAInteractions.map(mirna => {
-					data.push({
-						dbid: mirna.miRNA.objectId,
-						id: mirna.miRNA.primaryIdentifier, 
-						symbol: mirna.miRNA.symbol,
-						parent: gene.objectId
-					});
-				});
-			});
-			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('miRNA', data, 'cyan', 'triangle',grouped, false);
-		});
-		// console.log(imEntity.Gene.value);
+		// // add miRNA
+		// let mirnaQuery = {
+		// 	from: 'Gene',
+		// 	select: [
+		// 		'primaryIdentifier',
+		// 		'symbol',
+		// 		'miRNAInteractions.miRNA.primaryIdentifier',
+		// 		'miRNAInteractions.miRNA.symbol'
+		// 	],
+		// 	where: [{ path:'id', op: 'one of', values: imEntity.Gene.value }]
+		// };
+		// imService.records(mirnaQuery).then(records => {
+		// 	let data = [];
+		// 	records.forEach(gene => {
+		// 		gene.miRNAInteractions.map(mirna => {
+		// 			data.push({
+		// 				dbid: mirna.miRNA.objectId,
+		// 				id: mirna.miRNA.primaryIdentifier, 
+		// 				symbol: mirna.miRNA.symbol,
+		// 				parent: gene.objectId
+		// 			});
+		// 		});
+		// 	});
+		// 	let grouped = data.length > 10 ? true : false;
+		// 	window.CompositeNetwork.addData('miRNA', data, 'cyan', 'triangle',grouped, false);
+		// });
 		// PPI interactions - This is done in two steps...
 		// first we query the PPI associated to the original nodes
 		let ppiQuery = {
@@ -99,9 +98,6 @@ function main(el, service, imEntity, state, config, navigate) {
 				validNodes.add(gene.objectId);
 				gene.interactions.forEach(gene2 => validNodes.add(gene2.gene2.objectId));
 			});
-			// console.log(records);
-			// console.log([...validNodes]);
-		
 			// secondly we query intra-set HCDP PPIs
 			let intraPPIQuery = {
 				from: 'Gene',
@@ -118,7 +114,6 @@ function main(el, service, imEntity, state, config, navigate) {
 				]
 			};
 			imService.records(intraPPIQuery).then(allPPIs => {
-				// console.log('intrappi', allPPIs);
 				let data = [];
 				allPPIs.forEach(gene => {
 					gene.interactions.map(ppi => {
@@ -126,7 +121,7 @@ function main(el, service, imEntity, state, config, navigate) {
 							dbid: ppi.gene2.objectId,
 							id: ppi.gene2.primaryIdentifier,
 							symbol: ppi.gene2.symbol,
-							parent: gene.objectId
+							linkedTo: gene.objectId
 						});
 					});
 				});
@@ -134,50 +129,33 @@ function main(el, service, imEntity, state, config, navigate) {
 			});
 		});
 
-		// add transcription factors
-		let tfQuery = {
-			from: 'Gene',
-			select: [
-				'primaryIdentifier',
-				'symbol',
-				'transcriptionalRegulations.targetGene.primaryIdentifier',
-				'transcriptionalRegulations.targetGene.symbol',
-				'transcriptionalRegulations.dataSets.name'
-			],
-			where: [
-				{ path: 'transcriptionalRegulations.targetGene.id', op: 'one of', values: imEntity.Gene.value }
-			]
-		};
-		imService.records(tfQuery).then(records => {
-			let data = records.map(tf => {
-				return {
-					dbid: tf.objectId,
-					id: tf.primaryIdentifier,
-					symbol: tf.symbol,
-					parent: tf.transcriptionalRegulations[0].targetGene.objectId
-				};
-			}); 
-			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('TF', data, 'LightGreen', 'square', grouped);
-		});
+		// // add transcription factors
+		// let tfQuery = {
+		// 	from: 'Gene',
+		// 	select: [
+		// 		'primaryIdentifier',
+		// 		'symbol',
+		// 		'transcriptionalRegulations.targetGene.primaryIdentifier',
+		// 		'transcriptionalRegulations.targetGene.symbol',
+		// 		'transcriptionalRegulations.dataSets.name'
+		// 	],
+		// 	where: [
+		// 		{ path: 'transcriptionalRegulations.targetGene.id', op: 'one of', values: imEntity.Gene.value }
+		// 	]
+		// };
+		// imService.records(tfQuery).then(records => {
+		// 	let data = records.map(tf => {
+		// 		return {
+		// 			dbid: tf.objectId,
+		// 			id: tf.primaryIdentifier,
+		// 			symbol: tf.symbol,
+		// 			parent: tf.transcriptionalRegulations[0].targetGene.objectId
+		// 		};
+		// 	}); 
+		// 	let grouped = data.length > 10 ? true : false;
+		// 	window.CompositeNetwork.addData('TF', data, 'LightGreen', 'square', grouped);
+		// });
 	});
-
-	// 	let query = new imjs.Query({ model });
-
-	// 	query.adjustPath('Gene');
-	// 	query.select([
-	// 		'primaryIdentifier',
-	// 		'symbol',
-			
-
-	// 		'interactions.gene2.primaryIdentifier',
-	// 		'interactions.gene2.symbol'
-	// 	]);
-	// 	query.addConstraint(
-	// 		{ path: 'id', op: 'one of',	values: imEntity.Gene.value	},
-	// 	);
-	// 	query.addJoin('miRNAInteractions');
-	// 	query.addJoin('interactions');
 
 	el.innerHTML = `
 		<div class="rootContainer">
@@ -204,7 +182,7 @@ function main(el, service, imEntity, state, config, navigate) {
 						</div>
 						
 						<div id="interactions-ppi" class="flex-row">
-							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="Interactions"></input>
+							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="PPI"></input>
 							<label class="row-label">PPIs (HCDP)</label>
 						</div>
 						<div id="interactions-mti" class="flex-row">
