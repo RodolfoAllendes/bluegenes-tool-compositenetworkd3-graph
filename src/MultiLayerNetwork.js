@@ -103,13 +103,22 @@ export class MultiLayerNetwork{
 		this.displayLayers.forEach(dl => {
 
 			let layer = this.vm.get(dl);
-			layer.forEach(node => {
+			layer.forEach((node,key) => {
 				node.linkedTo.forEach(link => {
 					let target = this.vm.get(link[1]).get(link[0]);
 				
 					data.push({
-						source: [node.x, node.y],
-						target: [target.x, target.y]
+						source:{
+							x: node.x,
+							y: node.y,
+							id: key,
+							layer: dl
+						},
+						target: {
+							x: target.x, y: target.y,
+							id:	link[0],
+							layer: link[1]
+						}	
 					});
 				});
 

@@ -141,6 +141,13 @@ export class CompositeNetworkD3{
 			.raise();
 
 		/* find edges associated to this node */
+		d3.selectAll('line')
+			.filter(function(line){
+				return line.source.id === d.id || line.target.id === d.id;
+			})
+			.attr('x1', d.x2 = x)
+			.attr('y1', d.y2 = y);
+		
 		
 		g.select('circle')
 			.attr('cx', d.x = x)
@@ -197,14 +204,15 @@ export class CompositeNetworkD3{
 	 */
 	plotEdges(graph){
 		let data = this.network.getDisplayEdges();
-
 		d3.select(graph).selectAll('line')
 			.data(data)
 			.join('line')
-				.attr('x1', d => d.source[0])
-				.attr('x2', d => d.target[0])
-				.attr('y1', d => d.source[1])
-				.attr('y2', d => d.target[1])
+				.attr('x1', d => d.source.x)
+				.attr('x2', d => d.target.x)
+				.attr('y1', d => d.source.y)
+				.attr('y2', d => d.target.y)
+				.attr('sid', d => d.source.id)
+				.attr('tid', d => d.target.id)
 				.attr('stroke', 'lightGray');
 	}
 
