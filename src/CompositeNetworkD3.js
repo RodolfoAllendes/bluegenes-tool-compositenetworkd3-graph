@@ -139,6 +139,8 @@ export class CompositeNetworkD3{
 		let y = event.y < d.ymin+d.r ? d.ymin+d.r : event.y > d.ymax-d.r ? d.ymax-d.r : event.y;
 		let g = d3.select(this)
 			.raise();
+
+		/* find edges associated to this node */
 		
 		g.select('circle')
 			.attr('cx', d.x = x)
@@ -161,8 +163,8 @@ export class CompositeNetworkD3{
 	 */
 	plot(){
 		this.plotBackground('#background', this._width);
-		// this.plotEdges('#edges', d3.select('#cb-nodeGroup').property('checked'));
-		this.plotNodes('#nodes');
+		this.plotEdges('#canvas_compositeNetwork #edges');
+		this.plotNodes('#canvas_compositeNetwork #nodes');
 	}
 
 	/**
@@ -192,37 +194,9 @@ export class CompositeNetworkD3{
 	/**
 	 * Plot the edges in the graph
 	 * @param {} graph
-	 * @param {boolean} groups display groups of nodes
 	 */
-	plotEdges(graph, groups){
-		let data = [];
-
-		if(this.network.displayLayers.size >= 2){
-			this.network.displayLayers.forEach(dl => {
-				if(groups && this.network.groupedLayers.has(dl)){
-					this.network.groupedEdges.get(dl).forEach(edge => {
-						if(this.network.displayLayers.has(edge.sourceLayer)){
-							let s = this.network.nodes.get(edge.source);
-							let t = this.network.groupedNodes.get(dl).get(edge.target);
-							data.push({
-								source: [s.x, s.y],
-								target: [t.x, t.y]
-							});
-						}
-					});
-				}
-				else{
-					this.network.edges.get(dl).forEach(edge => {
-						let s = this.network.nodes.get(edge.source);
-						let t = this.network.nodes.get(edge.target);
-						data.push({ 
-							source: [s.x, s.y], 
-							target: [t.x, t.y] 
-						});
-					});
-				}
-			});
-		}
+	plotEdges(graph){
+		let data = this.network.getDisplayEdges();
 
 		d3.select(graph).selectAll('line')
 			.data(data)

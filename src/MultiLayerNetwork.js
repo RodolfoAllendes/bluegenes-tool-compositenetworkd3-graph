@@ -34,29 +34,17 @@ export class MultiLayerNetwork{
 		// retrieve current vm for the layer
 		let vm = this.vm.get(layer) || new Map();
 		data.forEach(ele => {
-			// add the node to the list (if required)
+			// add general node information to the list (if required)
 			if(!this.nodes.has(ele.dbid)){
-				let n = {
-					id: ele.id, 
-					symbol: ele.symbol,
-					isGroup: false, 
-					...(ele.linkedTo !== undefined && { linkedTo: [ele.linkedTo] } )
-				};
-				this.nodes.set(ele.dbid, n);
+				this.nodes.set(ele.dbid, {id: ele.id, symbol: ele.symbol});	
 			}
-			else{ // if node is already in the network only update its parents
-				if(ele.linkedTo !== undefined){
-					let n = this.nodes.get(ele.dbid);
-					// console.log(n, ele.linkedTo);
-					if( n.linkedTo === undefined )
-						n.linkedTo = [ele.linkedTo];
-					else
-						n.linkedTo.push(ele.linkedTo);
-					// console.log(n.linkedTo);
-				}
-			}
-			// add reference between layer and node
-			vm.set(ele.dbid,{});
+			// and add more graphical information associated to the version of
+			// the node in the current layer
+			let linkedTo = ele.linkedTo !== undefined ? [[ele.linkedTo, ele.linkedLayer]] : []; 
+			if(!vm.has(ele.dbid))
+				vm.set(ele.dbid, { isGroup:false, linkedTo });
+			else // if node is already in the network only update its parents
+				vm.get(ele.dbid).linkedTo.push(...linkedTo);
 		}, this);
 		// update the vm element for the layer
 		this.vm.set(layer, vm);
@@ -106,6 +94,32 @@ export class MultiLayerNetwork{
 
 	/**
 	 * 
+	 * @returns 
+	 */
+	getDisplayEdges(){
+		
+		let data = [];
+		
+		this.displayLayers.forEach(dl => {
+
+			let layer = this.vm.get(dl);
+			layer.forEach(node => {
+				node.linkedTo.forEach(link => {
+					let target = this.vm.get(link[1]).get(link[0]);
+				
+					data.push({
+						source: [node.x, node.y],
+						target: [target.x, target.y]
+					});
+				});
+
+			});
+		});
+		return data;
+	}
+
+	/**
+	 * 
 	 */
 	getDisplayNodes(r){
 		let data = [];
@@ -143,19 +157,17 @@ export class MultiLayerNetwork{
 	 */
 	groupNodesByLayer(layerName){
 		let layer = this.vm.get(layerName);
-		// we will generate a series of new 'grouped' nodes and edges
+		// we will generate a series of new 'grouped' nodes 
 		let nodes = new Map();
-		// let edges = [];
 		let newVm = new Map();
 		
-		[...layer.entries()].forEach(([nid,pos]) => {
+		[...layer.entries()].forEach(([nid,ndata]) => {
 			// retrieve the node and remove it from the list of nodes
-			// console.log(nid);
 			const node = this.nodes.get(nid);
 			this.nodes.delete(nid);
-			// generate an id for the new node, based on its parents and the layer
-			// to witch it belongs
-			let p = parseInt(node.linkedTo.reduce((c,a) => a+c, ''));
+			// generate an id for the new node, based on the layer to witch it belongs
+			// and the nodes it is connected to
+			let p = parseInt(ndata.linkedTo.reduce((c,a) => a+c, ''));
 			p += TSH(layerName);
 			p = -Math.abs(p);
 			
@@ -163,23 +175,14 @@ export class MultiLayerNetwork{
 				// add new node
 				nodes.set(p, { 
 					'group': [node], 
-					'linkedTo': node.linkedTo,
-					'pos': pos 
-				});
-				// add edges
-				// node.parents.forEach(d => {
-				// 	this.edges.delete(d+'-'+nid);
-				// 	edges.set(d+'-'+p,{
-				// 		source: parseInt(d),
-				// 		target: p,
-				// 		sourceLayer: 'Gene',
-				// 		targetLayer: layerName
-				// 	});
-				// });
-				
+					'linkedTo': ndata.linkedTo,
+					'x': ndata.x,
+					'y': ndata.y
+				});				
 			}
 			else{
 				nodes.get(p).group.push(node);
+				nodes.get(p).linkedTo.push(...ndata.linkedTo);
 			}
 		});
 
@@ -187,20 +190,18 @@ export class MultiLayerNetwork{
 		nodes.forEach((v,k) => {
 			this.nodes.set(k, {
 				id: k, 
-				symbol: v.group.length,
+				symbol: v.group.length
+			});
+				
+			newVm.set(k, {
 				isGroup: true, 
 				group: v.group,
-				linkedTo: v.linkedTo
+				linkedTo: v.linkedTo,
+				x: v.x,
+				y: v.y
 			});
-
-			newVm.set(k, v.pos);
 		});
 		
-		// and the same with the edges
-		// edges.forEach(e => {
-		// 	this.edges
-		// })
-
 		this.vm.set(layerName, newVm);
 	}
 

@@ -42,7 +42,8 @@ function main(el, service, imEntity, state, config, navigate) {
 						dbid: cpd.compound.objectId,	
 						id: cpd.compound.identifier, 
 						symbol: cpd.compound.name,
-						linkedTo: gene.objectId 
+						linkedTo: gene.objectId,
+						linkedLayer: 'Gene' 
 					});
 				});
 			});
@@ -69,7 +70,8 @@ function main(el, service, imEntity, state, config, navigate) {
 						dbid: mirna.miRNA.objectId,
 						id: mirna.miRNA.primaryIdentifier, 
 						symbol: mirna.miRNA.symbol,
-						linkedTo: gene.objectId
+						linkedTo: gene.objectId,
+						linkedLayer: 'Gene'
 					});
 				});
 			});
@@ -122,7 +124,8 @@ function main(el, service, imEntity, state, config, navigate) {
 							dbid: ppi.gene2.objectId,
 							id: ppi.gene2.primaryIdentifier,
 							symbol: ppi.gene2.symbol,
-							linkedTo: gene.objectId
+							linkedTo: gene.objectId,
+							linkedLayer: 'PPI'
 						});
 					});
 				});
@@ -150,7 +153,8 @@ function main(el, service, imEntity, state, config, navigate) {
 					dbid: tf.objectId,
 					id: tf.primaryIdentifier,
 					symbol: tf.symbol,
-					linkedTo: tf.transcriptionalRegulations[0].targetGene.objectId
+					linkedTo: tf.transcriptionalRegulations[0].targetGene.objectId,
+					linkedLayer: 'Gene'
 				};
 			}); 
 			let grouped = data.length > 10 ? true : false;
