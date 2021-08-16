@@ -137,23 +137,31 @@ export class CompositeNetworkD3{
 	nodeDragged(event,d) {
 		let x = event.x < d.r ? d.r : event.x > d.xmax-d.r ? d.xmax-d.r : event.x;
 		let y = event.y < d.ymin+d.r ? d.ymin+d.r : event.y > d.ymax-d.r ? d.ymax-d.r : event.y;
-		let g = d3.select(this)
-			.raise();
-
+		
 		/* find edges associated to this node */
-		d3.selectAll('line')
+		d3.selectAll('#canvas_compositeNetwork #edges line')
 			.filter(function(line){
-				return line.source.id === d.id || line.target.id === d.id;
+				return line.source.id === d.id;
 			})
-			.attr('x1', d.x2 = x)
-			.attr('y1', d.y2 = y);
+			.attr('x1', d.x1 = x)
+			.attr('y1', d.y1 = y)
+			.attr('stroke', 'black');
+
+		d3.selectAll('#canvas_compositeNetwork #edges line')
+			.filter(function(line){
+				return line.target.id === d.id;
+			})
+			.attr('x2', d.x2 = x)
+			.attr('y2', d.y2 = y)
+			.attr('stroke', 'black');
 		
+		d3.select(this)
+			.raise()
+			.select('circle')
+				.attr('cx', d.x = x)
+				.attr('cy', d.y = y);
 		
-		g.select('circle')
-			.attr('cx', d.x = x)
-			.attr('cy', d.y = y);
-			
-		g.select('text')
+		d3.select(this).select('text')
 			.attr('dx', d.dx = x)
 			.attr('dy', d.dy = y);
 	}
@@ -161,8 +169,14 @@ export class CompositeNetworkD3{
 	/**
 	 * 
 	 */
-	nodeDragEnded() {
+	nodeDragEnded(event,d) {
 		d3.select(this).attr('stroke', null);
+		d3.selectAll('#canvas_compositeNetwork #edges line')
+			.filter(function(line){
+				return line.source.id === d.id || line.target.id === d.id;
+			})
+			.attr('stroke', 'lightGray');
+		// NEED TO PERSIST THE FINAL COORDINATES TO THE NETWORK
 	}
 	
 	/**
