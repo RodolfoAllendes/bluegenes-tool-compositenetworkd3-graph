@@ -184,7 +184,6 @@ export class CompositeNetworkD3{
 	 * 
 	 */
 	nodeDragEnded(event,d) {
-		// console.log(d);
 		d3.select(this).attr('stroke', null);
 		d3.selectAll('#canvas_compositeNetwork #edges line')
 			.filter(function(line){
@@ -192,7 +191,8 @@ export class CompositeNetworkD3{
 			})
 			.attr('stroke', 'lightGray');
 		// NEED TO PERSIST THE FINAL COORDINATES TO THE NETWORK
-		// d.network.hola('dragEnded');
+		d.network.setNodePosition(d.id,d.layer,d.x,d.y-d.shift);
+		
 	}
 	
 	/**

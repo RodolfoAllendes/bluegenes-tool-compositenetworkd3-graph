@@ -248,6 +248,11 @@ export class MultiLayerNetwork{
 		this.displayedLayers.get(layer).display = display;
 	}
 
+	setNodePosition(id,layer,x,y){
+		this.vm.get(layer).get(id).x = x;
+		this.vm.get(layer).get(id).y = y;
+	}
+
 	/**
 	 * Update the position of the nodes
 	 * We will implement a simple grid layout of the nodes, stacking from top to 
