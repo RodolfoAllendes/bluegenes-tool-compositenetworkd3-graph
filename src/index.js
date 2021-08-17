@@ -175,7 +175,6 @@ function main(el, service, imEntity, state, config, navigate) {
 			
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
 					<div id="interactions-div" class="flex-table">	
-						<label>Interaction Types:</label>
 						<div id="interactions-pci" class="flex-row">
 							<input id="cb-pci" class="displayCB" type="checkbox" data-layer="Compound"></input>
 							<label class="row-label">PCIs</label>

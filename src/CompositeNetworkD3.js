@@ -1,5 +1,6 @@
 'use strict';
 import { MultiLayerNetwork } from './MultiLayerNetwork';
+import { Sortable } from 'sortablejs';
 const d3 = require('d3');
 
 export class CompositeNetworkD3{
@@ -11,6 +12,7 @@ export class CompositeNetworkD3{
 	 * @param {function} navigate
 	 */
 	constructor(model, geneList, navigate) {
+		Sortable.create(document.getElementById('interactions-div'),{});
 		this.model = model;
 		this.navigate = navigate;
 		
@@ -29,7 +31,7 @@ export class CompositeNetworkD3{
 		this.network.addNodes('Gene', genes);
 		
 		/** initialize interface and interaction handlers */
-		this.initResizeHandler();
+		// this.initResizeHandler();
 		this.initCheckboxHandler();
 
 		this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
@@ -40,6 +42,7 @@ export class CompositeNetworkD3{
 			.on('zoom', this.zoomed);
 
 		this.nodeDrag = d3.drag()
+			.subject((event,d) => d == null ? {x: event.x, y: event.y} : d.network = this.network)
 			.on('start', this.nodeDragStarted)
 			.on('drag', this.nodeDragged)
 			.on('end', this.nodeDragEnded);
@@ -49,12 +52,13 @@ export class CompositeNetworkD3{
 			.attr('viewBox', [0,0,this._width,this._height])
 			.call(this.screenZoom);
 		
-		[this.r, this._width, this._height] = this.network.setNodesPositions(
-			this._width, 
-			this._height
-		);
-
+		// [this.r, this._width, this._height] = this.network.setNodesPositions(
+		// 	this._width, 
+		// 	this._height
+		// );
+		this.r = this.network.setNodesPositions(this._width, this._height);
 		this.plot();
+		
 	}
 
 	/**
@@ -69,11 +73,16 @@ export class CompositeNetworkD3{
 	addData(layer, data, color, shape, grouped=true, visible=false){
 		this.network.addLayer(layer, color, shape, visible);
 		this.network.addNodes(layer, data);
+		
 		if(grouped){
 			this.network.groupNodesByLayer(layer);
 		}
-		if(visible)
-			console('should replot?');
+		
+		this.r = this.network.setNodesPositions(this._width, this._height);
+		if(visible){
+			this.plot();
+		}
+			
 	}
 
 	/**
@@ -83,18 +92,19 @@ export class CompositeNetworkD3{
 		let self = this;
 		d3.selectAll('#rightColumn_compositeNetwork input.displayCB')
 			.on('change', function(){ 
-				if(this.checked)
-					self.network.displayLayers.add(this.dataset.layer);
-				else
-					self.network.displayLayers.delete(this.dataset.layer);
+				self.network.setDisplayLayer(this.dataset.layer, this.checked);
+				// if(this.checked)
+				// 	self.network.displayLayers.add(this.dataset.layer);
+				// else
+				// 	self.network.displayLayers.delete(this.dataset.layer);
 			
-				[self.r, self._width, self._height] = self.network.setNodesPositions(
-					self._width, 
-					self._height, 
-				);
-				d3.select('#canvas_compositeNetwork')
-					.call(self.screenZoom.transform, d3.zoomIdentity)
-					.call(self.screenZoom);
+				// [self.r, self._width, self._height] = self.network.setNodesPositions(
+				// 	self._width, 
+				// 	self._height, 
+				// );
+				// d3.select('#canvas_compositeNetwork')
+				// 	.call(self.screenZoom.transform, d3.zoomIdentity)
+				// 	.call(self.screenZoom);
 				self.plot();
 			});
 	}
@@ -105,18 +115,20 @@ export class CompositeNetworkD3{
 	initResizeHandler(){
 		window.addEventListener('resize', () => {
 			// replot the graph if more (or less) window space is available for the svg
-			this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
+			let w = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
+			
 			this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
-			this.r = this.network.setNodesPositions(
-				this._width, 
-				this._height,
-			)[0];
+			// this.r = this.network.setNodesPositions(
+			// 	this._width, 
+			// 	this._height,
+			// )[0];
 
+			this._width = w > this._width ? w : this._width;
 			d3.select('#canvas_compositeNetwork')
-				.call(this.screenZoom.transform, d3.zoomIdentity)
-				.call(this.screenZoom)
-				.transition()
-				.duration(1000)
+				// .call(this.screenZoom.transform, d3.zoomIdentity)
+				// .call(this.screenZoom)
+				// .transition()
+				// .duration(1000)
 				.attr('viewBox', [0, 0, this._width, this._height]);
 
 			this.plot();	
@@ -143,6 +155,7 @@ export class CompositeNetworkD3{
 			.filter(function(line){
 				return line.source.id === d.id;
 			})
+			.raise()
 			.attr('x1', d.x1 = x)
 			.attr('y1', d.y1 = y)
 			.attr('stroke', 'black');
@@ -151,6 +164,7 @@ export class CompositeNetworkD3{
 			.filter(function(line){
 				return line.target.id === d.id;
 			})
+			.raise()
 			.attr('x2', d.x2 = x)
 			.attr('y2', d.y2 = y)
 			.attr('stroke', 'black');
@@ -170,6 +184,7 @@ export class CompositeNetworkD3{
 	 * 
 	 */
 	nodeDragEnded(event,d) {
+		// console.log(d);
 		d3.select(this).attr('stroke', null);
 		d3.selectAll('#canvas_compositeNetwork #edges line')
 			.filter(function(line){
@@ -177,14 +192,18 @@ export class CompositeNetworkD3{
 			})
 			.attr('stroke', 'lightGray');
 		// NEED TO PERSIST THE FINAL COORDINATES TO THE NETWORK
+		// d.network.hola('dragEnded');
 	}
 	
 	/**
 	 * 
 	 */
 	plot(){
-		this.plotBackground('#background', this._width);
-		this.plotEdges('#canvas_compositeNetwork #edges');
+		let h = this.plotBackground('#canvas_compositeNetwork #background');
+		d3.select('#canvas_compositeNetwork')
+			.attr('viewBox', [0, 0, this._width, h]);
+
+		// this.plotEdges('#canvas_compositeNetwork #edges');
 		this.plotNodes('#canvas_compositeNetwork #nodes');
 	}
 
@@ -193,23 +212,23 @@ export class CompositeNetworkD3{
 	 * @param {} graph 
 	 * @param {*} width 
 	 */
-	plotBackground(graph, width){
+	plotBackground(graph){
 		/* filter out only displayable layers */
-		let data = [];
-		this.network.displayLayers.forEach(dl => {
-			data.push(this.network.layers.get(dl));
-		},this);
-		
+		let data = this.network.getDisplayLayers();
 		/* plot a series of layer backgrounds */
 		d3.select(graph).selectAll('rect')
 			.data(data)
 			.join('rect')
 				.attr('x', 0)
-				.attr('y', d => d.dims.ymin)
-				.attr('width', width)
-				.attr('height', d => d.dims.ymax - d.dims.ymin)
+				.attr('y', d => d.shift)
+				.attr('width', d => d.width)
+				.attr('height', d => d.height)
 				.attr('fill', d => d.color)
 				.style('opacity', 0.1);
+
+		return data.reduce((p,c) => {
+			return p + c.height;
+		},0);
 	}
 
 	/**
@@ -244,7 +263,7 @@ export class CompositeNetworkD3{
 		let g = d3.select(graph).selectAll('g')
 			.data(data)
 			.join('g')
-				.call(self.nodeDrag)
+				.call(self.nodeDrag, 'holamundo')
 				.on('click', function(d,i){
 					d3.select('#nodeLayer-div label')
 						.text(i.layer);
@@ -254,7 +273,7 @@ export class CompositeNetworkD3{
 				});
 
 		g.append('circle')
-			.attr('r',this.r)
+			.attr('r', this.r)
 			.attr('cx', d => d.x)
 			.attr('cy', d => d.y)
 			.attr('fill', d => d.color)
