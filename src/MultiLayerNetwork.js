@@ -6,31 +6,30 @@ export class MultiLayerNetwork{
 		this.nodes = new Map();
 		this.layers = new Map();
 		this.vm = new Map();
-		this.edges = new Map();
-
-		this.displayLayers = new Set();//Array();
+		// convenience variable data on display/hidden
 		this.displayedLayers = new Map();
 	}
 
 	/**
 	 * Add the details for a new Layer to the network
 	 * 
-	 * @param {string} name 
-	 * @param {string} color 
-	 * @param {string} shape 
-	 * @param {boolean} visible 
+	 * @param {string} name the name of the layer
+	 * @param {int} idx index (position) of the layer within the graph
+	 * @param {string} color color used to draw the nodes of the layer
+	 * @param {string} shape shape used to represent the nodes of the layer
+	 * @param {boolean} visible whether the layer is drawn or not
 	 */
-	addLayer(name, color, shape, visible=false){
-		this.layers.set(name, {color, shape});
+	addLayer(name, idx, color, shape, visible=false){
+		this.layers.set(name, {color, shape, idx});
 		this.displayedLayers.set(name, {display:visible});
-		// if(visible) this.displayLayers.add(name)
 	}
 
 	/**
 	 * Add nodes to a given Layer of the network
 	 * 
-	 * @param {String} layer 
-	 * @param {Array} data 
+	 * @param {string} layer the layer to which nodes will be added
+	 * @param {array} data array representation of a set of nodes, to be added
+	 * to the network
 	 */
 	addNodes(layer, data){
 		// retrieve current vm for the layer
@@ -50,48 +49,6 @@ export class MultiLayerNetwork{
 		}, this);
 		// update the vm element for the layer
 		this.vm.set(layer, vm);
-	}
-
-	/**
-	 * Add edges between  a single source node from a source layer, and a series 
-	 * of target nodes belonging to a different layer
-	 * @param {String} layer 
-	 * @param {Array} data 
-	 * @param {*} sourceNode 
-	 * @param {*} sourceLayer 
-	 */
-	addEdges(layer, data, sourceNode=undefined, sourceLayer=undefined){
-		// retrieve current vm for the layer
-		let vm = this.vm.get(layer) || new Set();
-		let edges = this.edges.get(layer) || new Map();
-		data.forEach(ele => {
-			// add the node to the list (if required)
-			if(!this.nodes.has(ele.dbid)){
-				let n = {
-					id: ele.id, 
-					symbol: ele.symbol, 
-					...(sourceNode !== undefined && { parents: [sourceNode.toString()] } )
-				};
-				this.nodes.set(ele.dbid, n);
-			}
-			else{ // if node is already in the network only update its parents
-				if(sourceNode !== undefined){
-					this.nodes.get(ele.dbid).parents.push(sourceNode.toString());
-				}
-			}
-			// add edges only if a source was identified 
-			if(sourceNode !== undefined)
-				edges.set(sourceNode+'-'+ele.dbid, {
-					source: sourceNode, 
-					target: ele.dbid,
-					sourceLayer,
-					targetLayer: layer
-				});
-			// add reference between layer and node
-			vm.add(ele.dbid);
-		}, this);
-		this.vm.set(layer, vm); 
-		this.edges.set(layer, edges);
 	}
 
 	/**
@@ -129,12 +86,17 @@ export class MultiLayerNetwork{
 		return data;
 	}
 
-	getDisplayLayers(){
+	/**
+	 * Return data used for the display of layers' background
+	 * @returns 
+	 */
+	getDisplayLayers(width, height){
 		let data = [];
 		let shift = 0;
-		[...this.displayedLayers.entries()].forEach( ([k,v]) => {
-			if(v.display){
-				let layer = this.layers.get(k);
+		this.getLayersInOrder().forEach(dl => {
+			if (this.displayedLayers.get(dl).display){
+				let layer = this.layers.get(dl);
+				if (layer.dims === undefined) this.initLayerNodesPositions(dl,width,height);		
 				data.push({
 					color: layer.color,
 					width: layer.dims.width,
@@ -153,33 +115,39 @@ export class MultiLayerNetwork{
 	getDisplayNodes(r){
 		let data = [];
 		let shift = 0;
-		[...this.displayedLayers.entries()].forEach( ([k,v]) => {
-			if(v.display){
-				// fetch the layer's color 
-				let color = this.layers.get(k).color;
-				let dims = this.layers.get(k).dims;
-				// and the position of each node
-				[...this.vm.get(k).entries()].map( ([node,pos]) =>{
-					let n = this.nodes.get(node);
-					data.push({
-						layer: k,
-						r,
-						xmin: 0,
-						xmax: dims.width,
-						ymin: shift,
-						ymax: shift+dims.height,
-						symbol: n.symbol, 
-						x: pos.x, 
-						y: shift+pos.y, 
-						id: node, 
-						color,
-						shift
-					});
+		this.getLayersInOrder().forEach(dl => {
+			let color = this.layers.get(dl).color;
+			let dims = this.layers.get(dl).dims;
+			// and the position of each node
+			[...this.vm.get(dl).entries()].map( ([node,pos]) =>{
+				let n = this.nodes.get(node);
+				data.push({
+					layer: dl,
+					r,
+					xmin: 0,
+					xmax: dims.width,
+					ymin: shift,
+					ymax: shift+dims.height,
+					symbol: n.symbol, 
+					x: pos.x, 
+					y: shift+pos.y, 
+					id: node, 
+					color,
+					shift
 				});
-				shift += dims.height;
-			}
+			});
+			shift += dims.height;
 		},this);
 		return data;
+	}
+
+	/**
+	 * 
+	 */
+	getLayersInOrder(){
+		let l = [...this.layers.entries()].sort((a,b) => a[1].idx-b[1].idx).map(ele => ele[0]);
+		// filter the layers based on those that need to be displayed only
+		return l.filter(a => this.displayedLayers.get(a).display,this);
 	}
 
 	/**
@@ -240,20 +208,6 @@ export class MultiLayerNetwork{
 	}
 
 	/**
-	 * 
-	 * @param {*} layer 
-	 * @param {*} display 
-	 */
-	setDisplayLayer(layer, display){
-		this.displayedLayers.get(layer).display = display;
-	}
-
-	setNodePosition(id,layer,x,y){
-		this.vm.get(layer).get(id).x = x;
-		this.vm.get(layer).get(id).y = y;
-	}
-
-	/**
 	 * Update the position of the nodes
 	 * We will implement a simple grid layout of the nodes, stacking from top to 
 	 * bottom the different layers of the network
@@ -261,44 +215,59 @@ export class MultiLayerNetwork{
 	 * @param {int} height the height of the drawin panel in pixels
 	 * @returns the radius (r) of the circle used to represent a node
 	 */
-	setNodesPositions(width, height){
+	initLayerNodesPositions(layer, width, height, rows){
+		// determine the number of cols
+		let cols = Math.ceil(rows*width/height);
+		// the row index for the current node (the actual shifting in position
+		// will be handled based on this index)
+		let dx = width/cols;
+		let dy = height/rows; 
+	
+		// actually position the nodes on each layer
+		// we set the starting row and column for node positioning
+		let x = Math.floor(cols/2); // initial column (at the center)
+		let j = 1;
+		let y = 0;
+
+		let d = this.layers.get(layer).dims;
+	
+		// and position the nodes one by one, moving away from the center column
+		// and down as the columns get filled
+		this.vm.get(layer).forEach((node) => {
+			// if the node has already been positioned, we simply update its position 
+			// proportionally to its newly defined width/height space
+			if(node.x !== undefined ){
+				node['x'] = node.x * width / d.width;//cols(dx*(x%cols)) + (dx/2);
+				node['y'] = node.y * height / d.height; //(dy*y) + (dy/2);
+				
+			}
+			// otherwise, we initialize its position completely
+			else{
+				node['x'] = (dx*(x%cols)) + (dx/2);
+				node['y'] = (dy*y) + (dy/2);
+			}
+					
+			x += ((-1)**j)*j;
+			j += 1;
+			if(x >= cols || x < 0){
+				x = Math.floor(cols/2);
+				y += 1;
+				j = 1;
+			}
+		});
+		// update the dimensions of the layer 
+		this.layers.get(layer)['dims'] = { width, height: dy*rows, rows, cols };
+	}
+
+	initLayersRows(width, height){
+		let dsplLay = this.getLayersInOrder();
 		// calculate the number of nodes that need to be displayed
-		// let n = this.displayLayers.map(dl => this.vm.get(dl[0]).size);
-		// console.log('n',n);
-		// // let n = this.vm.keys().reduce([...this.displayLayers.keys()].map(dl => {
-		// // 	return this.vm.get(dl).size;
-		// // });
+		let n = dsplLay.map(dl => this.vm.get(dl).size);
+		// determine the number of rows used for the display of each layer
+		let layerRows = dsplLay.map(dl => {
+			return this.layers.get(dl).dims === undefined ? 1 : this.layers.get(dl).dims.rows;
+		},this);
 		
-		// // how many columns there will be on each layer?? - initally only one
-		// let layerCols = Array(this.displayLayers.length).fill(1);
-		// // the total number of columns is the sum of all the layer columns
-		// let totalCols = layerCols.reduce((a,b) => a+b, 0);
-		// // minimum number of rows is proportional to the aspect ratio
-		// let totalRows = Math.ceil(totalCols*height/width); 
-		
-		// // do the number of nodes of layer i fit in the allocated rows*cols?
-		// let fits = layerCols.map((r,i) => r*totalRows >= n[i]); 
-		// console.log(fits);
-		// // if not... increase the number of rows or cols
-		// while (fits.includes(false)){
-		// 	layerCols = layerCols.map((r,i) => r*totalRows < n[i]? r+1 : r);
-		// 	totalCols = layerCols.reduce((a,b) => a+b, 0);
-		// 	totalRows = Math.ceil(totalCols*height/width);
-		// 	fits = layerCols.map((r,i) => r*totalRows >= n[i]);
-		// }
-		// layerCols = layerCols.map((r,i)=> Math.ceil(n[i]/totalRows));
-		// console.log(totalRows);
-		// console.log(layerCols);
-		
-		// calculate the number of nodes that need to be displayed
-		// let n = [...this.displayLayers.keys()].map(dl => {
-		// 	return this.vm.get(dl).size;
-		// });
-		let n = [...this.displayedLayers.keys()].map(dl => this.vm.get(dl).size);
-		
-		// based on the number of nodes to be displayed on each layer, decide the 
-		// number of rows and columns the graph should have
-		let layerRows = Array(this.displayedLayers.size).fill(1);
 		// minimum number of rows is one per display layer
 		let totalRows = layerRows.reduce((a,b) => a+b, 0); 
 		// minimum number of cols is proportional to the aspect ratio
@@ -313,44 +282,82 @@ export class MultiLayerNetwork{
 			fits = layerRows.map((r,i) => r*totalCols >= n[i]);
 		}
 		layerRows = layerRows.map((r,i)=> Math.ceil(n[i]/totalCols));
+		return layerRows;
+	}
+
+	/**
+	 * Update the position of the nodes
+	 * We will implement a simple grid layout of the nodes, stacking from top to 
+	 * bottom the different layers of the network
+	 * @param {int} width the width of the drawing panel in pixels
+	 * @param {int} height the height of the drawin panel in pixels
+	 * @returns the radius (r) of the circle used to represent a node
+	 */
+	initNodesPositions(width, height){
+		let dsplLay = this.getLayersInOrder();
+		// determine the number of rows per layer
+		let layerRows = this.initLayersRows(width,height);
+		let totalRows = layerRows.reduce((a,b) => a+b, 0);
+		let totalCols = Math.ceil(totalRows*width/height);
 		
-		// the row index for the current node (the actual shifting in position
-		// will be handled based on this index)
-		let dx = width/totalCols;
-		let dy = height/totalRows; 
-		let bb = Math.min(dx,dy); // the bounding box for a node
+		dsplLay.forEach((dl,i) => {
+			// we initialize positions for undefined layers only
+			this.initLayerNodesPositions(dl, width, height*layerRows[i]/totalRows, layerRows[i]);
+		},this);
+		
+
+		
+		// // the row index for the current node (the actual shifting in position
+		// // will be handled based on this index)
+		// let dx = width/totalCols;
+		// let dy = height/totalRows; 
+		let bb = Math.min(width/totalCols, height/totalRows); // the bounding box for a node
 		let r = bb*.3; // radio of the circle used to represent a node
 
-		// actually position the nodes on each layer
-		// let y = 0; // initial row
-		let i = 0;
-		[...this.displayedLayers.keys()].forEach(dl => {
-			// we set the starting row and column for node positioning
-			let x = Math.floor(totalCols/2); // initial column (at the center)
-			let j = 1;
-			let y = 0;
+		// // actually position the nodes on each layer
+		// // let y = 0; // initial row
+		// let i = 0;
+		// [...this.displayedLayers.keys()].forEach(dl => {
+		// 	// we set the starting row and column for node positioning
+		// 	let x = Math.floor(totalCols/2); // initial column (at the center)
+		// 	let j = 1;
+		// 	let y = 0;
 
-			// // and position the nodes one by one, moving away from the center column
-			// // and down as the columns get filled
-			this.vm.get(dl).forEach((node) => {
-				node['x'] = (dx*(x%totalCols)) + (dx/2);
-				node['y'] = (dy*y) + (dy/2);
+		// // and position the nodes one by one, moving away from the center column
+		// // and down as the columns get filled
+		// 	this.vm.get(dl).forEach((node) => {
+		// 		node['x'] = (dx*(x%totalCols)) + (dx/2);
+		// 		node['y'] = (dy*y) + (dy/2);
 				
-				x += ((-1)**j)*j;
+		// 		x += ((-1)**j)*j;
 				
-				j += 1;
-				if(x >= totalCols || x < 0){
-					x = Math.floor(totalCols/2);
-					y += 1;
-					j = 1;
-				}
-			});
-			// add 'layer bounding box' based on the nodes coordinates
-			this.layers.get(dl)['dims'] = { width, height: dy*layerRows[i] };
-			i+=1;
-		});
-		// return the updated width/height svg viewBox
-		return r; //[r, width, totalRows*dy];
+		// 		j += 1;
+		// 		if(x >= totalCols || x < 0){
+		// 			x = Math.floor(totalCols/2);
+		// 			y += 1;
+		// 			j = 1;
+		// 		}
+		// 	});
+		// 	// add 'layer bounding box' based on the nodes coordinates
+		// 	this.layers.get(dl)['dims'] = { width, height: dy*layerRows[i] };
+		// 	i+=1;
+		// });
+		// return the updated radious of circles
+		return r; 
+	}
+
+	/**
+	 * 
+	 * @param {*} layer 
+	 * @param {*} display 
+	 */
+	setDisplayLayer(layer, display){
+		this.displayedLayers.get(layer).display = display;
+	}
+	
+	setNodePosition(id,layer,x,y){
+		this.vm.get(layer).get(id).x = x;
+		this.vm.get(layer).get(id).y = y;
 	}
 }
 

@@ -48,7 +48,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				});
 			});
 			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('Compound', data, 'lime', 'hexagon', grouped);
+			window.CompositeNetwork.addData('Compound', 1, data, 'lime', 'hexagon', grouped);
 		});
 		
 		// add miRNA
@@ -76,7 +76,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				});
 			});
 			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('miRNA', data, 'cyan', 'triangle',grouped, false);
+			window.CompositeNetwork.addData('miRNA', 2, data, 'cyan', 'triangle',grouped, false);
 		});
 
 		// PPI interactions - This is done in two steps...
@@ -129,7 +129,7 @@ function main(el, service, imEntity, state, config, navigate) {
 						});
 					});
 				});
-				window.CompositeNetwork.addData('PPI', data, 'gray', 'ellipse', false, false);
+				window.CompositeNetwork.addData('PPI', 3, data, 'gray', 'ellipse', false, false);
 			});
 		});
 
@@ -158,7 +158,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				};
 			}); 
 			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('TF', data, 'LightGreen', 'square', grouped);
+			window.CompositeNetwork.addData('TF', 4, data, 'LightGreen', 'square', grouped);
 		});
 	});
 
@@ -175,23 +175,25 @@ function main(el, service, imEntity, state, config, navigate) {
 			
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
 					<div id="interactions-div" class="flex-table">	
+						<div id="interactions-gene" class="flex-row">
+							<input id="cb-gene" class="displayCB" type="checkbox" data-layer="Gene" checked disabled></input>
+							<label class="row-label">Initial Genes</label>
+						</div>
 						<div id="interactions-pci" class="flex-row">
 							<input id="cb-pci" class="displayCB" type="checkbox" data-layer="Compound"></input>
 							<label class="row-label">PCIs</label>
 						</div>
-						
-						<div id="interactions-tf" class="flex-row">
-							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="TF"></input>
-							<label class="row-label">TF targets<label>
+						<div id="interactions-mti" class="flex-row">
+							<input id="cb-mti" class="displayCB" type="checkbox" data-layer="miRNA"></input>
+							<label class="row-label">MTIs</label>
 						</div>
-						
 						<div id="interactions-ppi" class="flex-row">
 							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="PPI"></input>
 							<label class="row-label">PPIs (HCDP)</label>
 						</div>
-						<div id="interactions-mti" class="flex-row">
-							<input id="cb-mti" class="displayCB" type="checkbox" data-layer="miRNA"></input>
-							<label class="row-label">MTIs</label>
+						<div id="interactions-tf" class="flex-row">
+							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="TF"></input>
+							<label class="row-label">TF targets<label>
 						</div>
 					</div>
 					<div id="information-div" class="flex-table">
