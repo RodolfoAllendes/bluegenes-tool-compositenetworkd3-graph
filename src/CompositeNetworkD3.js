@@ -159,7 +159,7 @@ export class CompositeNetworkD3{
 		// 	.call(self.screenZoom.transform, d3.zoomIdentity)
 		// 	.call(self.screenZoom);
 		this.plotBackground('#canvas_compositeNetwork #background');
-		// this.plotEdges('#canvas_compositeNetwork #edges');
+		this.plotEdges('#canvas_compositeNetwork #edges');
 		this.plotNodes('#canvas_compositeNetwork #nodes');
 	}
 

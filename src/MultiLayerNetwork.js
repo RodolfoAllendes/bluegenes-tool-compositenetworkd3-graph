@@ -12,7 +12,6 @@ export class MultiLayerNetwork{
 
 	/**
 	 * Add the details for a new Layer to the network
-	 * 
 	 * @param {string} name the name of the layer
 	 * @param {int} idx index (position) of the layer within the graph
 	 * @param {string} color color used to draw the nodes of the layer
@@ -26,7 +25,6 @@ export class MultiLayerNetwork{
 
 	/**
 	 * Add nodes to a given Layer of the network
-	 * 
 	 * @param {string} layer the layer to which nodes will be added
 	 * @param {array} data array representation of a set of nodes, to be added
 	 * to the network
@@ -52,35 +50,33 @@ export class MultiLayerNetwork{
 	}
 
 	/**
-	 * 
-	 * @returns 
+	 * Return data used for the display of edges in the network
+	 * @returns a data array with edge information
 	 */
 	getDisplayEdges(){
-		
 		let data = [];
+		let dsplLayers = this.getLayersInOrder();
+		if (dsplLayers.length < 2)
+			return data;
 		
-		this.displayLayers.forEach(dl => {
-
+		let shifts = [ 0 ];
+		dsplLayers.forEach((dl,i) => {
+			shifts.push(shifts[i]+this.layers.get(dl).dims.height);
+		});
+		
+		dsplLayers.forEach((dl,i) => {
 			let layer = this.vm.get(dl);
-			layer.forEach((node,key) => {
+			[...layer.entries()].forEach(([id,node]) => {
 				node.linkedTo.forEach(link => {
-					let target = this.vm.get(link[1]).get(link[0]);
-				
-					data.push({
-						source:{
-							x: node.x,
-							y: node.y,
-							id: key,
-							layer: dl
-						},
-						target: {
-							x: target.x, y: target.y,
-							id:	link[0],
-							layer: link[1]
-						}	
-					});
+					let j = dsplLayers.indexOf(link[1]);
+					if( j!== -1){
+						let target = this.vm.get(link[1]).get(link[0]);
+						data.push({
+							source: { x: node.x, y: shifts[i]+node.y, id,	layer: dl	},
+							target: {	x: target.x, y: shifts[j]+target.y,	id:	link[0], layer: link[1]	}	
+						});
+					}
 				});
-
 			});
 		});
 		return data;
@@ -88,7 +84,7 @@ export class MultiLayerNetwork{
 
 	/**
 	 * Return data used for the display of layers' background
-	 * @returns 
+	 * @returns a data array with layer background information
 	 */
 	getDisplayLayers(width, height){
 		let data = [];
@@ -154,42 +150,40 @@ export class MultiLayerNetwork{
 	 * Define all 'group' nodes for a given layer.
 	 * Based on the parents for each node in a layer, define groupings that 
 	 * condense into a single element all those nodes that share the same parents.
-	 * 
 	 * @param {string} layerName the name of the layer to group
 	 */
 	groupNodesByLayer(layerName){
 		let layer = this.vm.get(layerName);
+		
 		// we will generate a series of new 'grouped' nodes 
-		let nodes = new Map();
+		let groupNodes = new Map();
 		let newVm = new Map();
 		
-		[...layer.entries()].forEach(([nid,ndata]) => {
+		[...layer.entries()].forEach(([id,data]) => {
 			// retrieve the node and remove it from the list of nodes
-			const node = this.nodes.get(nid);
-			this.nodes.delete(nid);
+			const node = this.nodes.get(id);
+			this.nodes.delete(id);
 			// generate an id for the new node, based on the layer to witch it belongs
 			// and the nodes it is connected to
-			let p = parseInt(ndata.linkedTo.reduce((c,a) => a+c, ''));
+			let p = parseInt(data.linkedTo.reduce((c,a) => a+c, ''));
 			p += TSH(layerName);
 			p = -Math.abs(p);
 			
-			if(!nodes.has(p)){
+			if(!groupNodes.has(p)){
 				// add new node
-				nodes.set(p, { 
+				groupNodes.set(p, { 
 					'group': [node], 
-					'linkedTo': ndata.linkedTo,
-					'x': ndata.x,
-					'y': ndata.y
+					'linkedTo': data.linkedTo,
+					'x': data.x,
+					'y': data.y
 				});				
 			}
 			else{
-				nodes.get(p).group.push(node);
-				nodes.get(p).linkedTo.push(...ndata.linkedTo);
+				groupNodes.get(p).group.push(node);
 			}
 		});
-
 		// add grouped nodes to the network's list of nodes
-		nodes.forEach((v,k) => {
+		groupNodes.forEach((v,k) => {
 			this.nodes.set(k, {
 				id: k, 
 				symbol: v.group.length
@@ -203,7 +197,6 @@ export class MultiLayerNetwork{
 				y: v.y
 			});
 		});
-		
 		this.vm.set(layerName, newVm);
 	}
 
