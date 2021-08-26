@@ -208,9 +208,7 @@ export class MultiLayerNetwork{
 	 * @param {int} height the height of the drawin panel in pixels
 	 * @returns the radius (r) of the circle used to represent a node
 	 */
-	initLayerNodesPositions(layer, width, height, rows){
-		// determine the number of cols
-		let cols = Math.ceil(rows*width/height);
+	initLayerNodesPositions(layer, width, height, rows, cols){
 		// the row index for the current node (the actual shifting in position
 		// will be handled based on this index)
 		let dx = width/cols;
@@ -275,7 +273,7 @@ export class MultiLayerNetwork{
 			fits = layerRows.map((r,i) => r*totalCols >= n[i]);
 		}
 		layerRows = layerRows.map((r,i)=> Math.ceil(n[i]/totalCols));
-		return layerRows;
+		return [layerRows, totalCols];
 	}
 
 	/**
@@ -289,53 +287,18 @@ export class MultiLayerNetwork{
 	initNodesPositions(width, height){
 		let dsplLay = this.getLayersInOrder();
 		// determine the number of rows per layer
-		let layerRows = this.initLayersRows(width,height);
+		let [layerRows, totalCols] = this.initLayersRows(width,height);
 		let totalRows = layerRows.reduce((a,b) => a+b, 0);
-		let totalCols = Math.ceil(totalRows*width/height);
 		
 		dsplLay.forEach((dl,i) => {
 			// we initialize positions for undefined layers only
-			this.initLayerNodesPositions(dl, width, height*layerRows[i]/totalRows, layerRows[i]);
+			this.initLayerNodesPositions(dl, width, height*layerRows[i]/totalRows, layerRows[i], totalCols);
 		},this);
 		
-
-		
-		// // the row index for the current node (the actual shifting in position
-		// // will be handled based on this index)
-		// let dx = width/totalCols;
-		// let dy = height/totalRows; 
+		// the row index for the current node (the actual shifting in position
+		// will be handled based on this index)
 		let bb = Math.min(width/totalCols, height/totalRows); // the bounding box for a node
 		let r = bb*.3; // radio of the circle used to represent a node
-
-		// // actually position the nodes on each layer
-		// // let y = 0; // initial row
-		// let i = 0;
-		// [...this.displayedLayers.keys()].forEach(dl => {
-		// 	// we set the starting row and column for node positioning
-		// 	let x = Math.floor(totalCols/2); // initial column (at the center)
-		// 	let j = 1;
-		// 	let y = 0;
-
-		// // and position the nodes one by one, moving away from the center column
-		// // and down as the columns get filled
-		// 	this.vm.get(dl).forEach((node) => {
-		// 		node['x'] = (dx*(x%totalCols)) + (dx/2);
-		// 		node['y'] = (dy*y) + (dy/2);
-				
-		// 		x += ((-1)**j)*j;
-				
-		// 		j += 1;
-		// 		if(x >= totalCols || x < 0){
-		// 			x = Math.floor(totalCols/2);
-		// 			y += 1;
-		// 			j = 1;
-		// 		}
-		// 	});
-		// 	// add 'layer bounding box' based on the nodes coordinates
-		// 	this.layers.get(dl)['dims'] = { width, height: dy*layerRows[i] };
-		// 	i+=1;
-		// });
-		// return the updated radious of circles
 		return r; 
 	}
 

@@ -174,6 +174,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				</svg>
 			
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
+					<h5 class="report-item-heading">Layers:</h5>
 					<div id="interactions-div" class="flex-table">	
 						<div id="interactions-gene" class="flex-row">
 							<input id="cb-gene" class="displayCB" type="checkbox" data-layer="Gene" checked disabled></input>
@@ -197,7 +198,7 @@ function main(el, service, imEntity, state, config, navigate) {
 						</div>
 					</div>
 					<div id="information-div" class="flex-table">
-						<label>Node Information:</label>
+					<h5 class="report-item-heading">Node Information:</h5>
 						<div id="nodeLayer-div" class="flex-row">
 							<label class="row-label">Click on a node to see details...</label>
 						</div>
