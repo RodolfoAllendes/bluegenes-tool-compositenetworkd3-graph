@@ -198,7 +198,7 @@ function main(el, service, imEntity, state, config, navigate) {
 						</div>
 					</div>
 					<div id="information-div" class="flex-table">
-					<h5 class="report-item-heading">Node Information:</h5>
+						<h5 class="report-item-heading">Node Information:</h5>
 						<div id="nodeLayer-div" class="flex-row">
 							<label class="row-label">Click on a node to see details...</label>
 						</div>
@@ -208,13 +208,51 @@ function main(el, service, imEntity, state, config, navigate) {
 						<div id="nodeId-div" class="flex-row">
 							<label class="row-label"></label>
 						</div>
+						
 					</div>
+					<button type="button" class="flex-button" onClick="window.CompositeNetwork.saveGraph()">
+						<i class="fa fa-download"></i> Export
+					</button>
 				</div>
-				<div id="modal_compositeNetwork" class="targetmineGraphModal">
-				</div>
+
 			</div>
 		</div>
 	`;
 }
 
 export { main };
+
+
+{/* <div class="im-modal">
+<div class="im-modal-content">
+	<div class="modal-dialog ">
+		<div class="modal-content">
+			
+			<div class="modal-header">
+				<h4>Export this graph as...
+					<a class="close">x</a>
+				</h4>
+			</div>
+				
+				<div class="modal-body">
+					<div class="modal-body exporttable-body">
+						<form>
+							<label>Select image format
+								<select id="fileType" class="form-control">
+									<option>png</option>
+									<option>svg</option>
+									<option>pdf</option>
+								</select>
+							</label>
+						</form>
+					</div>
+				</div>
+				
+				<div class="modal-footer">
+					<a class="btn btn-raised btn-primary" onclick="window.CompositeNetwork.saveGraph()">Download now!</a>
+				</div>
+
+			</div>
+		</div>
+	</div>
+</div> */}

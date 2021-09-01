@@ -1,6 +1,7 @@
 'use strict';
 import { MultiLayerNetwork } from './MultiLayerNetwork';
 // import { Sortable } from 'sortablejs';
+import { saveAs } from 'file-saver';
 const d3 = require('d3');
 
 export class CompositeNetworkD3{
@@ -214,7 +215,7 @@ export class CompositeNetworkD3{
 		let g = d3.select(graph).selectAll('g')
 			.data(data)
 			.join('g')
-				.call(self.nodeDrag, 'holamundo')
+				.call(self.nodeDrag)
 				.on('click', function(d,i){
 					d3.select('#nodeLayer-div label')
 						.text(i.layer);
@@ -266,6 +267,99 @@ export class CompositeNetworkD3{
 		d3.select('g#cursor')
 			.attr('transform', t.transform);
 	}
+
+
+	saveGraph(){
+		let graph = d3.select('#canvas_compositeNetwork').node();
+		graph.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+		
+		let cssStyleText = this.getCSSStyles(graph);
+		
+		let styleElement = document.createElement('style');
+		styleElement.setAttribute('type','text/css');
+		styleElement.innerHTML = cssStyleText;
+		
+		let refNode = graph.hasChildNodes() ? graph.children[0] : null;
+		graph.insertBefore( styleElement, refNode );	
+		
+		graph.setAttribute('width', this._width);
+		graph.setAttribute('height', this._height);
+		
+		let serializer = new XMLSerializer();
+		let svgString = serializer.serializeToString(graph);
+		svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // Fix root xlink without namespace
+		svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari NS namespace fix
+		
+
+		// passes Blob and filesize String to the callback
+		this.svgString2Image( svgString, 2*this._width, 2*this._height, save );
+		function save(dataBlob){
+			saveAs(dataBlob, 'graph.png');
+		}
+	}
+
+	getCSSStyles(node){
+		let selectorTextArr = new Set();
+
+		// Add Parent element Id and Classes to the list
+		selectorTextArr.add( '.bluegenesToolCompositeNetworkd3Graph #'+node.id );
+		node.classList.forEach(c => selectorTextArr.add('.bluegenesToolCompositeNetworkd3Graph svg.'+c));
+
+		// Add Children element Ids and Classes to the list
+		d3.select('#compositeNetworkD3-graph #'+node.id).selectAll('*')
+			.each(function(){
+				selectorTextArr.add('#compositeNetworkD3-graph #'+this.id);
+				this.classList.forEach(c => selectorTextArr.add('#compositeNetworkD3-graph .'+c));
+			});
+		
+		// Extract CSS Rules
+		let extractedCSSText = '';
+		for (let i = 0; i < document.styleSheets.length; i++) {
+			let s = document.styleSheets[i];
+
+			try {
+				if(!s.cssRules) continue;
+			} catch( e ) {
+				if(e.name !== 'SecurityError') throw e; // for Firefox
+				continue;
+			}
+
+			let cssRules = s.cssRules;
+			for (let r = 0; r < cssRules.length; r++) {
+				if (selectorTextArr.has(cssRules[r].selectorText))
+					extractedCSSText += cssRules[r].cssText;
+			}
+		}
+		return extractedCSSText;
+	}
+
+	svgString2Image(svgString, width, height, callback){
+		
+		let imgsrc = 'data:image/svg+xml;base64,'+ btoa( unescape( encodeURIComponent( svgString ) ) ); // Convert SVG string to data URL
+
+		let canvas = d3.select('div.bluegenesToolCompositeNetworkd3Graph')
+			.append('canvas')
+			.attr('width', width)
+			.attr('height', height)
+			.style('display', 'none');
+		let context = canvas.node().getContext('2d');				 
+		let image = new Image();
+		image.onload = function() {
+			// draw a white background
+			context.fillStyle='#FFFFFF';
+			context.fillRect( 0, 0, width, height );
+
+			context.drawImage(image, 0, 0, width, height);
+			canvas.node().toBlob( function(blob) {
+				if ( callback ) callback( blob );//, filesize );
+			}, 'image/png');
+
+		
+		};
+		image.src = imgsrc;
+	}
+
+
 }
 
 
