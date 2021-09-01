@@ -33,6 +33,7 @@ export class CompositeNetworkD3{
 
 		// initialize interaction handlers
 		this.initCheckboxHandler();
+		this.initExportHandlers();
 
 		this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
 		this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
@@ -83,6 +84,19 @@ export class CompositeNetworkD3{
 			.on('change', function(){ 
 				self.network.setDisplayLayer(this.dataset.layer, this.checked);
 				self.plot();		
+			});
+	}
+	initExportHandlers(){
+		d3.select('#compositeNetworkD3-graph #exportButton')
+			.on('click', function(){
+				d3.select('#compositeNetworkD3-graph div.im-modal')
+					.style('display', 'flex');
+			});
+		d3.selectAll('#compositeNetworkD3-graph a.close')
+			.on('click', function(){
+				d3.select('#compositeNetworkD3-graph div.im-modal')
+					
+				.style('display', 'none');
 			});
 	}
 
