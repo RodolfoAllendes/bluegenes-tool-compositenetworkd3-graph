@@ -233,7 +233,7 @@ export class CompositeNetworkD3{
 			.join('g')
 				.call(self.nodeDrag)
 				.on('click', function(d,i){
-					self.setInfo(i.tmClass, i.symbol, i.id);
+					self.setInfo(i.layer, i.tmClass, i.symbol, i.isGroup, i.id);
 					if(d.defaultPrevented) return;
 				});
 
@@ -259,19 +259,32 @@ export class CompositeNetworkD3{
 
 	/**
 	 * 
-	 * @param {*} target 
+	 * @param {*} layer
+	 * symbol
+	 * grouped
+	 * id
 	 */
-	setInfo(layer, symbol, id){
+	setInfo(layer, tmClass, symbol, isGroup, id){
 		let self = this;
-		d3.select('#nodeLayer-div label')
+		d3.select('#rightColumn_compositeNetwork #nodeLayer-div label')
 			.text(layer);
-		d3.select('#nodeSymbol-div label')
-			.text(symbol)
+		d3.select('#rightColumn_compositeNetwork #nodeSymbol-div label')
+			.text(symbol);
+		d3.select('#rightColumn_compositeNetwork #nodeId-div label')
+			.text(() => isGroup ? 'Ungroup Node':'To report page')
 			.on('click', function(){
-				self.navigate('report', {
-					type: layer,
-					id: id
-				});
+				if(!isGroup){
+					self.navigate('report', {
+						type: tmClass,
+						id: id
+					});
+				}
+				else{
+					self.network.ungroupNode(layer,id);
+					self.network.initNodesPositions(self._width, self._height);
+					self.network.forceInitLayerNodesPositions(layer);
+					self.plot();
+				}
 			});
 	}
 

@@ -50,6 +50,37 @@ export class MultiLayerNetwork{
 		this.vm.set(layer, vm);
 	}
 
+	forceInitLayerNodesPositions(layer){
+		let d = this.layers.get(layer).dims;
+		if (d === undefined) return;
+		// the row index for the current node (the actual shifting in position
+		// will be handled based on this index)
+		let dx = d.width/d.cols;
+		let dy = d.height/d.rows; 
+	
+		// actually position the nodes on each layer
+		// we set the starting row and column for node positioning
+		let x = Math.floor(d.cols/2); // initial column (at the center)
+		let j = 1;
+		let y = 0;
+
+		// and position the nodes one by one, moving away from the center column
+		// and down as the columns get filled
+		this.vm.get(layer).forEach((node) => {
+			node['x'] = (dx*(x%d.cols)) + (dx/2);
+			node['y'] = (dy*y) + (dy/2);
+								
+			x += ((-1)**j)*j;
+			j += 1;
+			if(x >= d.cols || x < 0){
+				x = Math.floor(d.cols/2);
+				y += 1;
+				j = 1;
+			}
+		});
+		
+	}
+
 	/**
 	 * Return data used for the display of edges in the network
 	 * @returns a data array with edge information
@@ -126,7 +157,8 @@ export class MultiLayerNetwork{
 					xmax: dims.width,
 					ymin: shift,
 					ymax: shift+dims.height,
-					symbol: n.symbol, 
+					symbol: n.symbol,
+					isGroup: pos.isGroup,
 					x: pos.x, 
 					y: shift+pos.y, 
 					id: node,
@@ -209,9 +241,13 @@ export class MultiLayerNetwork{
 	 * bottom the different layers of the network
 	 * @param {int} width the width of the drawing panel in pixels
 	 * @param {int} height the height of the drawin panel in pixels
+	 * @param rows
+	 * @param cols
 	 * @returns the radius (r) of the circle used to represent a node
 	 */
-	initLayerNodesPositions(layer, width, height, rows, cols){
+	initLayerNodesPositions(layer, width=undefined, height=undefined, rows=undefined, cols=undefined){
+		let d = this.layers.get(layer).dims;
+		
 		// the row index for the current node (the actual shifting in position
 		// will be handled based on this index)
 		let dx = width/cols;
@@ -223,8 +259,6 @@ export class MultiLayerNetwork{
 		let j = 1;
 		let y = 0;
 
-		let d = this.layers.get(layer).dims;
-	
 		// and position the nodes one by one, moving away from the center column
 		// and down as the columns get filled
 		this.vm.get(layer).forEach((node) => {
@@ -312,7 +346,7 @@ export class MultiLayerNetwork{
 	 */
 	ungroupNode(layerName, id){
 		let layer = this.vm.get(layerName);
-		let node = this.vm.get(layerName).get(id);
+		let node = layer.get(id);
 		// remove the node from the current layer and the list of nodes
 		layer.delete(id);
 		this.nodes.delete(id);
