@@ -76,7 +76,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				});
 			});
 			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('MiRNA', 2, data, 'miRNA', 'cyan', 'triangle',grouped, false);
+			window.CompositeNetwork.addData('miRNA', 2, data, 'MiRNA', 'cyan', 'triangle',grouped, false);
 		});
 
 		// PPI interactions - This is done in two steps...

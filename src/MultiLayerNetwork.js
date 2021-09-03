@@ -164,8 +164,8 @@ export class MultiLayerNetwork{
 		
 		[...layer.entries()].forEach(([id,data]) => {
 			// retrieve the node and remove it from the list of nodes
-			const node = this.nodes.get(id);
-			this.nodes.delete(id);
+			// const node = this.nodes.get(id);
+			// this.nodes.delete(id);
 			// generate an id for the new node, based on the layer to witch it belongs
 			// and the nodes it is connected to
 			let p = parseInt(data.linkedTo.reduce((c,a) => a+c, ''));
@@ -175,14 +175,14 @@ export class MultiLayerNetwork{
 			if(!groupNodes.has(p)){
 				// add new node
 				groupNodes.set(p, { 
-					'group': [node], 
+					'group': [id], 
 					'linkedTo': data.linkedTo,
 					'x': data.x,
 					'y': data.y
 				});				
 			}
 			else{
-				groupNodes.get(p).group.push(node);
+				groupNodes.get(p).group.push(id);
 			}
 		});
 		// add grouped nodes to the network's list of nodes
@@ -303,6 +303,29 @@ export class MultiLayerNetwork{
 		let bb = Math.min(width/totalCols, height/totalRows); // the bounding box for a node
 		let r = bb*.3; // radio of the circle used to represent a node
 		return r; 
+	}
+
+	/**
+	 * 
+	 * @param {string} layer 
+	 * @param {string} id 
+	 */
+	ungroupNode(layerName, id){
+		let layer = this.vm.get(layerName);
+		let node = this.vm.get(layerName).get(id);
+		// remove the node from the current layer and the list of nodes
+		layer.delete(id);
+		this.nodes.delete(id);
+
+		// add all nodes from the group to vm
+		node.group.forEach(id => {
+			layer.set(id, {
+				isGroup:false, 
+				linkedTo: node.linkedTo,
+				x: node.x,
+				y: node.y
+			});
+		});
 	}
 
 	/**
