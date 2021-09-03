@@ -48,7 +48,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				});
 			});
 			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('Compound', 1, data, 'lime', 'hexagon', grouped);
+			window.CompositeNetwork.addData('Compound', 1, data, 'Compound', 'lime', 'hexagon', grouped);
 		});
 		
 		// add miRNA
@@ -76,7 +76,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				});
 			});
 			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('miRNA', 2, data, 'cyan', 'triangle',grouped, false);
+			window.CompositeNetwork.addData('MiRNA', 2, data, 'miRNA', 'cyan', 'triangle',grouped, false);
 		});
 
 		// PPI interactions - This is done in two steps...
@@ -129,7 +129,7 @@ function main(el, service, imEntity, state, config, navigate) {
 						});
 					});
 				});
-				window.CompositeNetwork.addData('PPI', 3, data, 'gray', 'ellipse', false, false);
+				window.CompositeNetwork.addData('PPI', 3, data, 'Gene', 'gray', 'ellipse', false, false);
 			});
 		});
 
@@ -158,7 +158,7 @@ function main(el, service, imEntity, state, config, navigate) {
 				};
 			}); 
 			let grouped = data.length > 10 ? true : false;
-			window.CompositeNetwork.addData('TF', 4, data, 'LightGreen', 'square', grouped);
+			window.CompositeNetwork.addData('TF', 4, data, 'Gene', 'LightGreen', 'square', grouped);
 		});
 	});
 

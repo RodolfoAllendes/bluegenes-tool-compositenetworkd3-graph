@@ -19,7 +19,7 @@ export class CompositeNetworkD3{
 		
 		// process initial data data into a MultiLayer Network instance 
 		this.network = new MultiLayerNetwork();
-		this.network.addLayer('Gene', 0, 'yellow', 'ellipse', true);
+		this.network.addLayer('Gene', 0, 'Gene', 'yellow', 'ellipse', true);
 		// add the source gene list to the network
 		let genes = geneList.map(g => {
 			return { 
@@ -55,15 +55,17 @@ export class CompositeNetworkD3{
 	/**
 	 * Add nodes to the network
 	 * @param {string} layer 
+	 * idx
 	 * @param {object} data 
+	 * tmclass
 	 * @param {string} color 
 	 * @param {string} shape 
 	 * @param {boolean} grouped 
 	 * @param {boolean} visible  
 	 */
-	addData(layer, idx, data, color, shape, grouped=true, visible=false){
+	addData(layer, idx, data, tmclass, color, shape, grouped=true, visible=false){
 		// create a new layer in the network
-		this.network.addLayer(layer, idx, color, shape, visible);
+		this.network.addLayer(layer, idx, tmclass, color, shape, visible);
 		// and add nodes and edges to it
 		this.network.addNodes(layer, data);
 		// group nodes if requested
@@ -231,10 +233,7 @@ export class CompositeNetworkD3{
 			.join('g')
 				.call(self.nodeDrag)
 				.on('click', function(d,i){
-					d3.select('#nodeLayer-div label')
-						.text(i.layer);
-					d3.select('#nodeSymbol-div label')
-						.text(i.symbol);
+					self.setInfo(i.tmClass, i.symbol, i.id);
 					if(d.defaultPrevented) return;
 				});
 
@@ -262,15 +261,18 @@ export class CompositeNetworkD3{
 	 * 
 	 * @param {*} target 
 	 */
-	setInfo(target){
-		// target.layer
-		d3.select('#nodeSymbol-div > label')
-			.text('Symbol: '+target.symbol);
-		d3.select('#nodeId-div > label')
-			.text('View in TargetMine');
-		// .on('click',function(){
-		// 	console.log('nav',self.navigate);
-		// });
+	setInfo(layer, symbol, id){
+		let self = this;
+		d3.select('#nodeLayer-div label')
+			.text(layer);
+		d3.select('#nodeSymbol-div label')
+			.text(symbol)
+			.on('click', function(){
+				self.navigate('report', {
+					type: layer,
+					id: id
+				});
+			});
 	}
 
 	/**

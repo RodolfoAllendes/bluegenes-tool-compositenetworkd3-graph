@@ -14,12 +14,13 @@ export class MultiLayerNetwork{
 	 * Add the details for a new Layer to the network
 	 * @param {string} name the name of the layer
 	 * @param {int} idx index (position) of the layer within the graph
+	 * @param {tmClass} tmClass the layer'S corresponding class in TM's genomic model
 	 * @param {string} color color used to draw the nodes of the layer
 	 * @param {string} shape shape used to represent the nodes of the layer
 	 * @param {boolean} visible whether the layer is drawn or not
 	 */
-	addLayer(name, idx, color, shape, visible=false){
-		this.layers.set(name, {color, shape, idx});
+	addLayer(name, idx, tmClass, color, shape, visible=false){
+		this.layers.set(name, {tmClass, color, shape, idx});
 		this.displayedLayers.set(name, {display:visible});
 	}
 
@@ -112,6 +113,7 @@ export class MultiLayerNetwork{
 		let data = [];
 		let shift = 0;
 		this.getLayersInOrder().forEach(dl => {
+			let tmClass = this.layers.get(dl).tmClass;
 			let color = this.layers.get(dl).color;
 			let dims = this.layers.get(dl).dims;
 			// and the position of each node
@@ -127,7 +129,8 @@ export class MultiLayerNetwork{
 					symbol: n.symbol, 
 					x: pos.x, 
 					y: shift+pos.y, 
-					id: node, 
+					id: node,
+					tmClass,
 					color,
 					shift
 				});
