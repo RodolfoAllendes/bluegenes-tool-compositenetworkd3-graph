@@ -183,10 +183,12 @@ function main(el, service, imEntity, state, config, navigate) {
 						<div id="interactions-pci" class="flex-row">
 							<input id="cb-pci" class="displayCB" type="checkbox" data-layer="Compound"></input>
 							<label class="row-label">PCIs</label>
+							<div class="row-cell group-layer" id="Compound"><i id="Compound" class="fa fa-object-group fa-disabled" aria-hidden="true"></i></div>
 						</div>
 						<div id="interactions-mti" class="flex-row">
 							<input id="cb-mti" class="displayCB" type="checkbox" data-layer="miRNA"></input>
 							<label class="row-label">MTIs</label>
+							<div class="row-cell group-layer" id="miRNA"><i id="miRNA" class="fa fa-object-group fa-disabled" aria-hidden="true"></i></div>
 						</div>
 						<div id="interactions-ppi" class="flex-row">
 							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="PPI"></input>
@@ -194,11 +196,12 @@ function main(el, service, imEntity, state, config, navigate) {
 						</div>
 						<div id="interactions-tf" class="flex-row">
 							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="TF"></input>
-							<label class="row-label">TF targets<label>
+							<label class="row-label">TF targets</label>
+							<div class="row-cell group-layer" id="TF"><i id="TF" class="fa fa-object-group fa-disabled" aria-hidden="true"></i></div>
 						</div>
 					</div>
+					<h5 class="report-item-heading">Node Information:</h5>
 					<div id="information-div" class="flex-table">
-						<h5 class="report-item-heading">Node Information:</h5>
 						<div id="nodeLayer-div" class="flex-row">
 							<label class="row-label">Click on a node to see details...</label>
 						</div>
@@ -208,7 +211,6 @@ function main(el, service, imEntity, state, config, navigate) {
 						<div id="nodeId-div" class="flex-row">
 							<label class="row-label"></label>
 						</div>
-						
 					</div>
 					<button type="button" id="exportButton" class="flex-button">
 						<i class="fa fa-download"></i> Export

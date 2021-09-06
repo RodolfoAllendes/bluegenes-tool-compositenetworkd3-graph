@@ -189,23 +189,24 @@ export class MultiLayerNetwork{
 	 */
 	groupNodesByLayer(layerName){
 		let layer = this.vm.get(layerName);
-		
 		// we will generate a series of new 'grouped' nodes 
 		let groupNodes = new Map();
 		let newVm = new Map();
-		
 		[...layer.entries()].forEach(([id,data]) => {
-			// retrieve the node and remove it from the list of nodes
-			// const node = this.nodes.get(id);
-			// this.nodes.delete(id);
-			// generate an id for the new node, based on the layer to witch it belongs
-			// and the nodes it is connected to
+			// if the node is already a group, move it directly to the resulting list
+			if(data.isGroup){
+				groupNodes.set(id,data);
+				return;
+			} 
+			// otherwise, generate a hash code for the node, based on its layer and connections
 			let p = parseInt(data.linkedTo.reduce((c,a) => a+c, ''));
 			p += TSH(layerName);
 			p = -Math.abs(p);
-			
-			if(!groupNodes.has(p)){
-				// add new node
+			// and 'add' it to the list of group nodes
+			if(groupNodes.has(p)){
+				groupNodes.get(p).group.push(id);
+			}
+			else{
 				groupNodes.set(p, { 
 					'group': [id], 
 					'linkedTo': data.linkedTo,
@@ -213,24 +214,30 @@ export class MultiLayerNetwork{
 					'y': data.y
 				});				
 			}
-			else{
-				groupNodes.get(p).group.push(id);
-			}
 		});
 		// add grouped nodes to the network's list of nodes
-		groupNodes.forEach((v,k) => {
-			this.nodes.set(k, {
-				id: k, 
-				symbol: v.group.length
-			});
-				
-			newVm.set(k, {
-				isGroup: true, 
-				group: v.group,
-				linkedTo: v.linkedTo,
-				x: v.x,
-				y: v.y
-			});
+		groupNodes.forEach((value,key) => {
+			if(value.group.length > 1){
+				this.nodes.set(key, {
+					id: key, 
+					symbol: value.group.length
+				});
+				newVm.set(key, {
+					isGroup: true, 
+					group: value.group,
+					linkedTo: value.linkedTo,
+					x: value.x,
+					y: value.y
+				});
+			}
+			else{
+				newVm.set(value.group[0], {
+					isGroup: false, 
+					linkedTo: value.linkedTo,
+					x: value.x,
+					y: value.y
+				});
+			}
 		});
 		this.vm.set(layerName, newVm);
 	}

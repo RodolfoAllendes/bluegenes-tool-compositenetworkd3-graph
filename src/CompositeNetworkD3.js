@@ -33,8 +33,8 @@ export class CompositeNetworkD3{
 
 		// initialize interaction handlers
 		this.initCheckboxHandler();
-		this.initExportHandlers();
-
+		this.initExportHandler();
+		
 		this._width = parseInt(d3.select('#canvas_compositeNetwork').style('width'));
 		this._height= parseInt(d3.select('#canvas_compositeNetwork').style('height'));
 		
@@ -85,10 +85,12 @@ export class CompositeNetworkD3{
 		d3.selectAll('#rightColumn_compositeNetwork input.displayCB')
 			.on('change', function(){ 
 				self.network.setDisplayLayer(this.dataset.layer, this.checked);
+				self.initGroupLayerHandler(this.dataset.layer, this.checked);
 				self.plot();		
 			});
 	}
-	initExportHandlers(){
+	
+	initExportHandler(){
 		d3.select('#compositeNetworkD3-graph #exportButton')
 			.on('click', function(){
 				d3.select('#compositeNetworkD3-graph div.im-modal')
@@ -97,10 +99,25 @@ export class CompositeNetworkD3{
 		d3.selectAll('#compositeNetworkD3-graph a.close')
 			.on('click', function(){
 				d3.select('#compositeNetworkD3-graph div.im-modal')
-					
-				.style('display', 'none');
+					.style('display', 'none');
 			});
 	}
+
+	initGroupLayerHandler(layer, enable){
+		let self = this;
+		d3.select('#rightColumn_compositeNetwork i#'+layer)
+			.classed('fa-disabled', !enable);
+		if(enable){
+			d3.select('#rightColumn_compositeNetwork div#'+layer+'.group-layer')
+				.on('click', function(){
+					self.network.groupNodesByLayer(layer);
+					self.plot();
+				});
+		}
+		else	
+			d3.select('#rightColumn_compositeNetwork div#'+layer+'.group-layer').on('click', null);
+	}
+	
 
 	/**
 	 * 
@@ -157,7 +174,7 @@ export class CompositeNetworkD3{
 				return line.source.id === d.id || line.target.id === d.id;
 			})
 			.attr('stroke', 'lightGray');
-		// NEED TO PERSIST THE FINAL COORDINATES TO THE NETWORK
+	
 		d.network.setNodePosition(d.id,d.layer,d.x,d.y-d.shift);	
 	}
 	
@@ -267,11 +284,11 @@ export class CompositeNetworkD3{
 	setInfo(layer, tmClass, symbol, isGroup, id){
 		let self = this;
 		d3.select('#rightColumn_compositeNetwork #nodeLayer-div label')
-			.text(layer);
+			.text(() => isGroup ? 'Grouped '+ tmClass : tmClass);
 		d3.select('#rightColumn_compositeNetwork #nodeSymbol-div label')
-			.text(symbol);
+			.text(() => isGroup ? 'Size: '+symbol : symbol);
 		d3.select('#rightColumn_compositeNetwork #nodeId-div label')
-			.text(() => isGroup ? 'Ungroup Node':'To report page')
+			.text(() => isGroup ? 'Ungroup Node':'Show report page')
 			.on('click', function(){
 				if(!isGroup){
 					self.navigate('report', {
@@ -284,6 +301,7 @@ export class CompositeNetworkD3{
 					self.network.initNodesPositions(self._width, self._height);
 					self.network.forceInitLayerNodesPositions(layer);
 					self.plot();
+					d3.select(this).text('');
 				}
 			});
 	}
@@ -388,7 +406,4 @@ export class CompositeNetworkD3{
 		image.src = imgsrc;
 	}
 
-
 }
-
-
