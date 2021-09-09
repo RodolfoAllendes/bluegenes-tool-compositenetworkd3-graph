@@ -4,7 +4,7 @@
   }
 
 	/* Overall CSS for the entire Graph Area */
-	div.targetmineGraphDisplayer{
+	.targetMineCompositeNetworkGraph{
 		display: flex;
 		flex-direction: row;
 		width: 100%;
@@ -13,77 +13,60 @@
 	}
 
 	/* Definitions for the SVG (left) area of the graph */
-	svg.targetmineGraphSVG{
+	.targetMineCompositeNetworkGraphSVG{
 		flex-grow: 1;
-		border-style: dashed;
-		border-color:cadetblue;
+		width: 100%;
+		height: inherit;
 	}
 
-	/* css for the right tools column elements */
-	div.rightColumn {
+	/* Definitions for the Controls (right) area of the graph  */
+	.rightColumn{
 		display: flex;
 		flex-direction: column;
 		width: 20%;
-		background-color: aliceblue;
+		background-color: #f9f9f9;
+		justify-content: space-evenly;
 	}
-	
-	div.flex-table{
+	.flex-table{
 		display: flex;
 		box-sizing: border-box;
 		flex-direction: column;
 		flex-wrap: nowrap;
-		justify-content: space-evenly;
+		justify-content: flex-start;
 	}
-	div.flex-row{
+	.flex-row{
 		display: flex;
 		flex-direction: row;
 		flex-wrap: nowrap;
 		justify-content: space-evenly;
 	}
-
-	div.row-cell{
-		width: 10%;
-		min-width: 10px;
-		max-width: 100px;
-		height: 20px;
-		background-color:lightpink;
-	}
-
-	.fa-disabled{
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
 	.row-label{
 		justify-content: left;
 		width: 80%;
 	}
-	
-	// .row-small-close{
-	// 	color: #aaa;	
-	// 	width: 10%;
-	// 	height: 20px;
-	// }
-	// .row-small-close:hover,
-	// .row-small-close:focus {
-	// 	color: black;
-	// 	text-decoration: none;
-	// 	cursor: pointer;
-	// }
-
-	button.flex-button{
+	.row-cell{
+		width: 10%;
+		min-width: 10px;
+		max-width: 100px;
+		height: 20px;
+	}
+	.row-button{
 		width: 50%;
 		min-width: 50px;
 		max-width: 100px;
 		align-self: center;
-		margin-top: auto;
 	}
-	
-	input[type=checkbox]{
-		height: inherit;
+	.fa-disabled{
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.html-link{
+		cursor: pointer;
+		color: blue;
+		text-decoration: underline;
 	}
 
-	/* css for modal elements */
+	/* Definitions for the Modal area of the */
 	.im-modal{
 		display: none;
 	}

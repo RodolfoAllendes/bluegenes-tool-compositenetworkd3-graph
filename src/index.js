@@ -164,8 +164,9 @@ function main(el, service, imEntity, state, config, navigate) {
 
 	el.innerHTML = `
 		<div class="rootContainer">
-			<div id="compositeNetworkD3-graph" class="targetmineGraphDisplayer">
-				<svg id="canvas_compositeNetwork" class="targetmineGraphSVG">
+			<div id="compositeNetworkD3Graph" class="targetMineCompositeNetworkGraph">
+				
+				<svg id="canvas_compositeNetwork" class="targetMineCompositeNetworkGraphSVG">
 						<g id="cursor">
 							<g id="background"></g>
 							<g id="edges"></g>
@@ -174,34 +175,44 @@ function main(el, service, imEntity, state, config, navigate) {
 				</svg>
 			
 				<div id="rightColumn_compositeNetwork" class="rightColumn">
-					<h5 class="report-item-heading">Layers:</h5>
+					
 					<div id="interactions-div" class="flex-table">	
+						<h5 class="report-item-heading">Layers:</h5>
 						<div id="interactions-gene" class="flex-row">
 							<input id="cb-gene" class="displayCB" type="checkbox" data-layer="Gene" checked disabled></input>
 							<label class="row-label">Initial Genes</label>
+							<div class="row-cell"></div>
 						</div>
 						<div id="interactions-pci" class="flex-row">
 							<input id="cb-pci" class="displayCB" type="checkbox" data-layer="Compound"></input>
 							<label class="row-label">PCIs</label>
-							<div class="row-cell group-layer" id="Compound"><i id="Compound" class="fa fa-object-group fa-disabled" aria-hidden="true"></i></div>
+							<div class="row-cell group-layer" id="Compound">
+								<i id="Compound" class="fa fa-object-group fa-disabled" aria-hidden="true"></i>
+							</div>
 						</div>
 						<div id="interactions-mti" class="flex-row">
 							<input id="cb-mti" class="displayCB" type="checkbox" data-layer="miRNA"></input>
 							<label class="row-label">MTIs</label>
-							<div class="row-cell group-layer" id="miRNA"><i id="miRNA" class="fa fa-object-group fa-disabled" aria-hidden="true"></i></div>
+							<div class="row-cell group-layer" id="miRNA">
+								<i id="miRNA" class="fa fa-object-group fa-disabled" aria-hidden="true"></i>
+							</div>
 						</div>
 						<div id="interactions-ppi" class="flex-row">
 							<input id="cb-ppi" class="displayCB" type="checkbox" data-layer="PPI"></input>
 							<label class="row-label">PPIs (HCDP)</label>
+							<div class="row-cell"></div>
 						</div>
 						<div id="interactions-tf" class="flex-row">
 							<input id="cb-tf" class="displayCB" type="checkbox" data-layer="TF"></input>
 							<label class="row-label">TF targets</label>
-							<div class="row-cell group-layer" id="TF"><i id="TF" class="fa fa-object-group fa-disabled" aria-hidden="true"></i></div>
+							<div class="row-cell group-layer" id="TF">
+								<i id="TF" class="fa fa-object-group fa-disabled" aria-hidden="true"></i>
+							</div>
 						</div>
 					</div>
-					<h5 class="report-item-heading">Node Information:</h5>
+					
 					<div id="information-div" class="flex-table">
+						<h5 class="report-item-heading">Node Information:</h5>
 						<div id="nodeLayer-div" class="flex-row">
 							<label class="row-label">Click on a node to see details...</label>
 						</div>
@@ -212,43 +223,44 @@ function main(el, service, imEntity, state, config, navigate) {
 							<label class="row-label"></label>
 						</div>
 					</div>
-					<button type="button" id="exportButton" class="flex-button">
-						<i class="fa fa-download"></i> Export
+
+					<button id="exportButton"  class="btn btn-default btn-raised row-button">
+						<i class="fa fa-download"></i> 
+						Export
 					</button>
+				
 				</div>
 
 				<div class="im-modal">
 					<div class="im-modal-content">
 						<div class="modal-dialog">
-							<div class="modal-content">
-			
-							<div class="modal-header">
-								<h4>Export this graph as...
-									<a class="close">x</a>
-								</h4>
-							</div>
-				
-							<div class="modal-body">
-								<div class="modal-body exporttable-body">
-									<form>
-										<label>Select image format
-											<select id="fileType" class="form-control">
-												<option>png</option>
-												<option>svg</option>
-											</select>
-										</label>
-									</form>
+							<div class="modal-content">	
+								<div class="modal-header">
+									<h4>Export the Composite Network Graph as...
+										<a class="close">x</a>
+									</h4>
 								</div>
-							</div>
-				
-							<div class="modal-footer">
-								<a class="btn btn-raised btn-primary" onclick="window.CompositeNetwork.saveGraph()">Download now!</a>
-							</div>
+								<div class="modal-body">
+									<div class="modal-body exporttable-body">
+										<form>
+											<label>Select image format
+												<select id="fileType" class="form-control">
+													<option>PNG</option>
+													<option>SVG</option>
+												</select>
+											</label>
+										</form>
+									</div>
+								</div>
+								<div class="modal-footer">
+									<a class="btn btn-raised btn-primary" onclick="window.CompositeNetwork.saveGraph()">Download now!</a>
+								</div>
 
+							</div>
 						</div>
 					</div>
 				</div>
-
+		
 			</div>
 		</div>
 	`;
