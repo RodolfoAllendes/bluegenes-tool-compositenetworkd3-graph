@@ -161,7 +161,6 @@ export class CompositeNetworkD3{
 			d3.select('#rightColumn_compositeNetwork div#'+layer+'.group-layer').on('click', null);
 	}
 	
-
 	/**
 	 * 
 	 */
@@ -175,13 +174,15 @@ export class CompositeNetworkD3{
 	 * @param {*} d
 	 */
 	nodeDragged(event,d) {
+		// restrict the resulting (x,y) positioning of the node to locations within
+		// its own layer
 		let x = event.x < d.r ? d.r : event.x > d.xmax-d.r ? d.xmax-d.r : event.x;
 		let y = event.y < d.ymin+d.r ? d.ymin+d.r : event.y > d.ymax-d.r ? d.ymax-d.r : event.y;
 		
 		/* find edges associated to this node */
 		d3.selectAll('#canvas_compositeNetwork #edges line')
 			.filter(function(line){
-				return line.source.id === d.id;
+				return line.source.id === d.id && line.source.layer === d.layer;
 			})
 			.raise()
 			.attr('x1', d.x1 = x)
@@ -190,7 +191,7 @@ export class CompositeNetworkD3{
 
 		d3.selectAll('#canvas_compositeNetwork #edges line')
 			.filter(function(line){
-				return line.target.id === d.id;
+				return line.target.id === d.id && line.target.layer === d.layer;
 			})
 			.raise()
 			.attr('x2', d.x2 = x)
@@ -217,7 +218,7 @@ export class CompositeNetworkD3{
 			.filter(function(line){
 				return line.source.id === d.id || line.target.id === d.id;
 			})
-			.attr('stroke', 'lightGray');
+			.attr('stroke', d => d.style.color);
 	
 		d.network.setNodePosition(d.id,d.layer,d.x,d.y-d.shift);	
 	}
@@ -266,12 +267,14 @@ export class CompositeNetworkD3{
 			.data(data)
 			.join('line')
 				.attr('x1', d => d.source.x)
-				.attr('x2', d => d.target.x)
 				.attr('y1', d => d.source.y)
-				.attr('y2', d => d.target.y)
 				.attr('sid', d => d.source.id)
+				.attr('slayer', d => d.source.layer)
+				.attr('x2', d => d.target.x)
+				.attr('y2', d => d.target.y)
 				.attr('tid', d => d.target.id)
-				.attr('stroke', 'lightGray');
+				.attr('tlayer', d => d.target.layer)
+				.attr('stroke', d => d.style.color);
 	}
 
 	/**

@@ -86,16 +86,18 @@ export class MultiLayerNetwork{
 	 * @returns a data array with edge information
 	 */
 	getDisplayEdges(){
-		let data = [];
 		let dsplLayers = this.getLayersInOrder();
+		// no edges if there is only a single layer
 		if (dsplLayers.length < 2)
-			return data;
-		
+			return [];
+		// node positions are relative to their own origin, thus they need to be 
+		// shifted according to the layer's order in the final display
 		let shifts = [ 0 ];
 		dsplLayers.forEach((dl,i) => {
 			shifts.push(shifts[i]+this.layers.get(dl).dims.height);
 		});
-		
+		// edges are derived based on the connections listed in the nodes
+		let data = [];
 		dsplLayers.forEach((dl,i) => {
 			let layer = this.vm.get(dl);
 			[...layer.entries()].forEach(([id,node]) => {
@@ -105,12 +107,37 @@ export class MultiLayerNetwork{
 						let target = this.vm.get(link[1]).get(link[0]);
 						data.push({
 							source: { x: node.x, y: shifts[i]+node.y, id,	layer: dl	},
-							target: {	x: target.x, y: shifts[j]+target.y,	id:	link[0], layer: link[1]	}	
+							target: {	x: target.x, y: shifts[j]+target.y,	id:	link[0], layer: link[1]	},
+							style: { color: 'lightGray' }	
 						});
 					}
 				});
 			});
 		});
+		// edges are also defined between the same node, repeated on different layers
+		let layerClass = dsplLayers.map(l => this.layers.get(l).tmClass);
+		layerClass.forEach((cls,i) => {
+			let j = i+1;
+			while(j<layerClass.length){
+				if(cls === layerClass[j])
+					break;
+				j++;
+			}
+			// if we found two layer with the same class
+			if(j<layerClass.length){
+				let [ls,lt, s, t] = this.vm.get(dsplLayers[i]).size < this.vm.get(dsplLayers[j]).size ? [this.vm.get(dsplLayers[i]),this.vm.get(dsplLayers[j]),i,j] : [this.vm.get(dsplLayers[j]),this.vm.get(dsplLayers[i]),j,i];
+				[...ls.entries()].forEach(([sid,sn]) => {
+					if(lt.has(sid)){
+						let tn = lt.get(sid);
+						data.push({
+							source: { x: sn.x, y: shifts[s]+sn.y, id: sid, layer: dsplLayers[s]	},
+							target: {	x: tn.x, y: shifts[t]+tn.y,	id:	sid, layer: dsplLayers[t]	},
+							style: { color: 'red' }	
+						});
+					}
+				});
+			} 
+		},this);
 		return data;
 	}
 
